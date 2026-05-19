@@ -296,21 +296,27 @@
     #skills-grid-container {
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      padding: 16px;
+      gap: 16px;
+      padding: 16px 0;
       width: 100%;
+      overflow: hidden;
     }
     .skills-row-grid {
       display: flex;
-      justify-content: space-around;
-      gap: 8px;
+      gap: 16px;
+      overflow-x: auto;
+      padding: 0 16px;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
     }
+    .skills-row-grid::-webkit-scrollbar { display: none; }
     .skill-chip-grid {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
-      width: 64px;
+      gap: 6px;
+      flex-shrink: 0;
+      width: 60px;
     }
     .skill-glyph-grid {
        width: 44px; height: 44px;

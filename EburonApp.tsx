@@ -500,7 +500,10 @@ When using tools, think silently but speak naturally after receiving results.` }
         'invoice': "I need an invoice for Ariolas BV with line items, auto-calculated totals, and a download button.",
         'contacts': "List my Google Contacts using the list_contacts tool.",
         'firebase': "Create a Firebase-style dashboard with live data cards and activity feed.",
-        'docs': "I need a document for Ariolas BV. I can request contracts, NDAs, ToS, SoW, LOI, MOU, SLA, privacy policy, etc. Make it look professional with the company's name throughout and include a download button."
+        'docs': "I need a document for Ariolas BV. I can request contracts, NDAs, ToS, SoW, LOI, MOU, SLA, privacy policy, etc. Make it look professional with the company's name throughout and include a download button.",
+        'knowledge': "Search my stored memories and previous conversational context to help me with this task.",
+        'scanner': "Open the scanner to identify a product or read a QR code.",
+        'whatsapp': "Check my recent WhatsApp messages using the available tools."
       };
       const prompt = prompts[toolId] || `Execute action: ${toolId}`;
       if (connected) {
@@ -589,13 +592,31 @@ When using tools, think silently but speak naturally after receiving results.` }
             <div className="skill-chip-grid" onClick={() => handleToolAction('calendar')}><div className="skill-glyph-grid bg-calendar"><Calendar size={18} /></div><span className="skill-label">Calendar</span></div>
             <div className="skill-chip-grid" onClick={() => handleToolAction('drive')}><div className="skill-glyph-grid bg-drive"><FolderOpen size={18} /></div><span className="skill-label">Drive</span></div>
             <div className="skill-chip-grid" onClick={() => handleToolAction('google')}><div className="skill-glyph-grid bg-google"><Search size={18} color="#4285F4" /></div><span className="skill-label">Google</span></div>
+            <div className="skill-chip-grid" onClick={() => handleToolAction('signature')}><div className="skill-glyph-grid bg-signature"><Signature size={18} /></div><span className="skill-label">Sign</span></div>
+            <div className="skill-chip-grid" onClick={() => handleToolAction('company')}><div className="skill-glyph-grid bg-company"><Building2 size={18} /></div><span className="skill-label">Company</span></div>
+            <div className="skill-chip-grid" onClick={() => handleToolAction('chat')}><div className="skill-glyph-grid bg-chat"><MessageSquare size={18} color="#00ac47" /></div><span className="skill-label">Chat</span></div>
+            <div className="skill-chip-grid" onClick={() => handleToolAction('forms')}><div className="skill-glyph-grid bg-forms"><FileStack size={18} color="#7248b9" /></div><span className="skill-label">Forms</span></div>
+            <div className="skill-chip-grid" onClick={() => handleToolAction('keep')}><div className="skill-glyph-grid bg-keep"><Paperclip size={18} color="#fbbc04" /></div><span className="skill-label">Keep</span></div>
+            <div className="skill-chip-grid" onClick={() => handleToolAction('meet')}><div className="skill-glyph-grid bg-meet"><Video size={18} /></div><span className="skill-label">Meet</span></div>
+            <div className="skill-chip-grid" onClick={() => handleToolAction('whatsapp')}><div className="skill-glyph-grid bg-whatsapp"><MessageSquare size={18} /></div><span className="skill-label">WhatsApp</span></div>
+            <div className="skill-chip-grid" onClick={() => handleToolAction('scanner')}><div className="skill-glyph-grid bg-scanner"><QrCode size={18} /></div><span className="skill-label">Scanner</span></div>
+            <div className="skill-chip-grid" onClick={() => handleToolAction('location')}><div className="skill-glyph-grid bg-location"><MapPin size={18} /></div><span className="skill-label">Location</span></div>
         </div>
         <div className="skills-row-grid">
             <div className="skill-chip-grid" onClick={() => handleToolAction('settings')}><div className="skill-glyph-grid bg-settings"><Settings size={18} /></div><span className="skill-label">Settings</span></div>
             <div className="skill-chip-grid" onClick={() => handleToolAction('tools')}><div className="skill-glyph-grid bg-tools"><Wrench size={18} /></div><span className="skill-label">Tools</span></div>
             <div className="skill-chip-grid" onClick={() => handleToolAction('history')}><div className="skill-glyph-grid bg-history"><History size={18} /></div><span className="skill-label">History</span></div>
+            <div className="skill-chip-grid" onClick={() => handleToolAction('knowledge')}><div className="skill-glyph-grid bg-knowledge"><Brain size={18} /></div><span className="skill-label">Knowledge</span></div>
             <div className="skill-chip-grid" onClick={() => handleToolAction('proposal')}><div className="skill-glyph-grid bg-proposal"><Presentation size={18} /></div><span className="skill-label">Proposal</span></div>
             <div className="skill-chip-grid" onClick={() => handleToolAction('gmail')}><div className="skill-glyph-grid bg-gmail"><Mail size={18} /></div><span className="skill-label">Mail</span></div>
+            <div className="skill-chip-grid" onClick={() => handleToolAction('sheets')}><div className="skill-glyph-grid bg-sheets"><Table size={18} /></div><span className="skill-label">Sheets</span></div>
+            <div className="skill-chip-grid" onClick={() => handleToolAction('slides')}><div className="skill-glyph-grid bg-slides"><FileStack size={18} /></div><span className="skill-label">Slides</span></div>
+            <div className="skill-chip-grid" onClick={() => handleToolAction('contract')}><div className="skill-glyph-grid bg-contract" style={{background: 'linear-gradient(135deg, #d4af37, #aa8222)'}}><Signature size={18} /></div><span className="skill-label">Contract</span></div>
+            <div className="skill-chip-grid" onClick={() => handleToolAction('invoice')}><div className="skill-glyph-grid bg-invoice" style={{background: 'linear-gradient(135deg, #60a5fa, #2563eb)'}}><FileStack size={18} /></div><span className="skill-label">Invoice</span></div>
+            <div className="skill-chip-grid" onClick={() => handleToolAction('contacts')}><div className="skill-glyph-grid bg-contacts"><User size={18} color="#1a73e8" /></div><span className="skill-label">Contacts</span></div>
+            <div className="skill-chip-grid" onClick={() => handleToolAction('firebase')}><div className="skill-glyph-grid bg-firebase" style={{background: '#ffca28', color: '#000'}}><Brain size={18} /></div><span className="skill-label">Firebase</span></div>
+            <div className="skill-chip-grid" onClick={() => handleToolAction('docs')}><div className="skill-glyph-grid bg-docs" style={{background: 'linear-gradient(135deg, #34d399, #059669)'}}><FileStack size={18} /></div><span className="skill-label">Docs</span></div>
+            <div className="skill-chip-grid" onClick={() => handleToolAction('picker')}><div className="skill-glyph-grid bg-picker"><Search size={18} /></div><span className="skill-label">Picker</span></div>
         </div>
       </div>
 
@@ -1073,6 +1094,39 @@ When using tools, think silently but speak naturally after receiving results.` }
              </div>
           </div>
        </div>
+      </div>
+
+      {/* Scanner Overlay */}
+      <div id="overlay-scanner" className={`full-page-overlay ${activeOverlay === 'scanner' ? 'active' : ''}`}>
+        <div className="overlay-header">
+          <div className="overlay-title">QR Scanner</div>
+          <button className="close-overlay-btn" onClick={() => setActiveOverlay(null)}><X size={18} /></button>
+        </div>
+        <div className="overlay-content" style={{ padding: 0 }}>
+          {activeOverlay === 'scanner' && (
+            <Scanner 
+              onScan={(result) => {
+                const text = result?.[0]?.rawValue || "No data";
+                handleToolAction(`scanned: ${text}`);
+                setActiveOverlay(null);
+              }} 
+            />
+          )}
+        </div>
+      </div>
+
+      {/* WhatsApp Overlay */}
+      <div id="overlay-whatsapp" className={`full-page-overlay ${activeOverlay === 'whatsapp' ? 'active' : ''}`}>
+        <div className="overlay-header">
+           <div className="overlay-title">WhatsApp Business</div>
+           <button className="close-overlay-btn" onClick={() => setActiveOverlay(null)}><X size={18} /></button>
+        </div>
+        <div className="overlay-content">
+           <div style={{ textAlign: 'center', marginTop: '100px', color: 'var(--text-muted)' }}>
+              <MessageSquare size={48} style={{ marginBottom: '16px', opacity: 0.5 }} />
+              <p>Connecting to WhatsApp Business API...</p>
+           </div>
+        </div>
       </div>
 
       {/* Tools Overlay */}
