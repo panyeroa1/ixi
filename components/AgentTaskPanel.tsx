@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import { useUI } from '../lib/state';
+import { VPSSimulation } from './VPSSimulation';
 
 export function AgentTaskPanel() {
   const isGenerating = useUI((state) => state.isGenerating);
@@ -139,25 +140,25 @@ export function AgentTaskPanel() {
             transition: 'all 0.4s ease',
             zIndex: 10
           }}>
-            <div style={{ height: '50px', backgroundColor: '#020617', borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', padding: '0 20px', gap: '20px' }}>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#ff5f56' }} />
-                <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#ffbd2e' }} />
-                <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#27c93f' }} />
-              </div>
-              <div style={{ flex: 1, maxWidth: '600px', margin: '0 auto', backgroundColor: '#0f172a', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', padding: '0 12px', fontSize: '13px', color: '#94a3b8', border: '1px solid #1e293b' }}>
-                 <svg style={{ marginRight: '8px', color: '#64748b' }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                 {activeWorkspaceResult ? 'file:///' + (activeWorkspaceResult.artifact?.title?.replace(/\s+/g, '_').toLowerCase() || 'document') : 'openmaw.coder/beatrice/sandbox'}
-              </div>
-              {activeWorkspaceResult && (
+            {activeWorkspaceResult && (
+              <div style={{ height: '50px', backgroundColor: '#020617', borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', padding: '0 20px', gap: '20px' }}>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#ff5f56' }} />
+                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#ffbd2e' }} />
+                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#27c93f' }} />
+                </div>
+                <div style={{ flex: 1, maxWidth: '600px', margin: '0 auto', backgroundColor: '#0f172a', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', padding: '0 12px', fontSize: '13px', color: '#94a3b8', border: '1px solid #1e293b' }}>
+                  <svg style={{ marginRight: '8px', color: '#64748b' }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                  {activeWorkspaceResult.artifact?.title || 'Document Preview'}
+                </div>
                 <button 
                   onClick={() => { useUI.getState().setActiveWorkspaceResult(null); useUI.getState().setIsGenerating(false); }}
                   style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '14px', padding: '0 8px', display: 'flex', alignItems: 'center', height: '100%', fontWeight: 'bold' }}
                 >
                   ✕
                 </button>
-              )}
-            </div>
+              </div>
+            )}
             
             <div style={{ flex: 1, position: 'relative', overflow: 'hidden', backgroundColor: '#0f172a' }}>
               {/* Simulated content based on result */}
@@ -186,15 +187,7 @@ export function AgentTaskPanel() {
                   )
               ) : (
                   <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
-                    <style>
-                    {`
-                      @keyframes desktop-spin {
-                        to { transform: rotate(360deg); }
-                      }
-                    `}
-                    </style>
-                    <div className="spinner" style={{ marginBottom: '24px', width: '48px', height: '48px', border: '4px solid rgba(165,180,252,0.2)', borderTopColor: '#cbfb45', borderRadius: '50%', animation: 'desktop-spin 1s linear infinite' }} />
-                    <div style={{ fontSize: '24px', fontWeight: 500 }}>{currentStep}</div>
+                    <VPSSimulation />
                   </div>
               )}
             </div>
