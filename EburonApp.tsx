@@ -16,12 +16,11 @@ import {
   Building2, Video, MessageSquare, Settings, Wrench, History, 
   Trash2, QrCode, MapPin, Brain, Presentation, Mail, Table, 
   FileStack, Paperclip, Send, Mic, Cast, X, Check, Save, RotateCcw,
-  Plug, Lock, Pencil, Maximize2, AlertCircle
+  Plug, Lock, Pencil, Maximize2
 } from 'lucide-react';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { ArtifactOverlay } from './components/ArtifactOverlay';
 import { AgentTaskPanel } from './components/AgentTaskPanel';
-import { connectWhatsapp, sendWhatsappMessage, fetchWhatsappMessages } from './lib/api-client';
 
 function StreamingText({ text, isFinal }: { text: string; isFinal: boolean }) {
   const [displayedText, setDisplayedText] = useState(isFinal ? text : "");
@@ -117,46 +116,6 @@ export default function EburonApp() {
   const [isPickerLoaded, setIsPickerLoaded] = useState(false);
   const [isVideoFullScreen, setIsVideoFullScreen] = useState(false);
   const [isMeetOpen, setIsMeetOpen] = useState(false);
-
-  // WhatsApp State
-  const [whatsappStatus, setWhatsappStatus] = useState<'idle' | 'loading' | 'connected' | 'qr' | 'error'>('idle');
-  const [whatsappQr, setWhatsappQr] = useState<string | null>(null);
-  const [whatsappError, setWhatsappError] = useState<string | null>(null);
-  const [whatsappMessages, setWhatsappMessages] = useState<any[]>([]);
-
-  useEffect(() => {
-    if (activeOverlay === 'whatsapp') {
-      const initWhatsapp = async () => {
-        setWhatsappStatus('loading');
-        try {
-          const res = await connectWhatsapp();
-          if (res.status === 'CONNECTED') {
-            setWhatsappStatus('connected');
-            // Fetch real messages
-            fetchWhatsappMessages().then(msgs => setWhatsappMessages(msgs)).catch(console.error);
-          } else if (res.qr) {
-            setWhatsappQr(res.qr);
-            setWhatsappStatus('qr');
-          } else if (res.status === 'INITIALIZING' || res.status === 'DISCONNECTED') {
-            if (res.qr_code) {
-               setWhatsappQr(res.qr_code);
-               setWhatsappStatus('qr');
-            } else {
-               setWhatsappStatus('error');
-               setWhatsappError('Failed to retrieve connection QR.');
-            }
-          } else {
-            setWhatsappStatus('connected');
-            fetchWhatsappMessages().then(msgs => setWhatsappMessages(msgs)).catch(console.error);
-          }
-        } catch (e: any) {
-          setWhatsappStatus('error');
-          setWhatsappError(e.message);
-        }
-      };
-      initWhatsapp();
-    }
-  }, [activeOverlay]);
 
   useEffect(() => {
     const loadPicker = () => {
@@ -337,16 +296,6 @@ ICON COMMANDS REFERENCE (When the user clicks these, they send these exact phras
 
 HTML ARTIFACTS:
 ALWAYS use generate_artifact(type="html", ...) for documents like contracts, invoices, dashboards, or signature pads. Include "Download PDF" or "Export" buttons in the HTML using standard browser APIs (e.g., window.print()). Every document must be professional, self-contained, and interactive.
-
-DESKTOP SANDBOX & VISUAL CONTROL:
-You operate within a sophisticated Desktop Sandbox environment (the 'sandbox-preview'). 
-1. **Visual Awareness**: You can "see" the sandbox by calling \`get_sandbox_state\`. Always call this to confirm results of your actions.
-2. **Interactive Control**: Control it using \`control_sandbox\`. 
-   - NAVIGATE: Use this to visit URLs.
-   - CLICK: Target elements by ID (e.g., 'vps-g-search', 'vps-address-bar') or coordinates.
-   - TYPE: Enter text.
-   - CLOSE: Reset or close active windows.
-3. **Behavior**: You are operating a desktop-grade environment inside the app. When the user asks to "search" or "go to", use these tools to drive the visual experience.
 
 ASSET STUDIO:
 When the user asks to "create all pages and function tools from the icons" or generate the Eburon AI Asset + Document Studio, call the \`open_eburon_asset_studio\` tool to instantly open the complete suite of brand assets and HTML documents.
@@ -578,9 +527,9 @@ Output only natural spoken text. No stage directions, no brackets, no role label
   const filteredTurns = turns.filter(turn => turn.role !== 'system');
 
   return (
-    <div id="app" className="app-shell">
+    <div id="app" className="app-container">
       {/* Header */}
-      <header className="app-header">
+      <header className="header">
         <div className="header-left">
           <img src="https://eburon.ai/icon-eburon.svg" alt="Eburon Logo" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
           <span className="ai-name">Eburon AI</span>
@@ -612,70 +561,70 @@ Output only natural spoken text. No stage directions, no brackets, no role label
         </div>
       </header>
 
-      {/* Skills Rail - Always in DOM, hide via CSS if needed to prevent layout jumping */}
-      <div id="skills-rail" style={{ display: (isGenerating || activeWorkspaceResult) ? 'none' : 'flex' }}>
+      {/* Skills Rail */}
+      <div id="skills-rail">
         <div className="skills-row" data-row="1">
           <div className="skills-track">
-            <div className="skill-chip" onClick={() => handleToolAction('profile')}><div className="skill-glyph bg-profile"><User size={24} /></div><span className="skill-label">Profile</span></div>
-            <div className="skill-chip" onClick={() => handleToolAction('tasks')}><div className="skill-glyph bg-tasks"><ListChecks size={24} /></div><span className="skill-label">Tasks</span></div>
-            <div className="skill-chip" onClick={() => handleToolAction('calendar')}><div className="skill-glyph bg-calendar"><Calendar size={24} /></div><span className="skill-label">Calendar</span></div>
-            <div className="skill-chip" onClick={() => handleToolAction('drive')}><div className="skill-glyph bg-drive"><FolderOpen size={24} /></div><span className="skill-label">Drive</span></div>
-            <div className="skill-chip" onClick={() => handleToolAction('google')}><div className="skill-glyph bg-google"><Search size={24} color="#4285F4" /></div><span className="skill-label">Google</span></div>
-            <div className="skill-chip" onClick={() => handleToolAction('signature')}><div className="skill-glyph bg-signature"><Signature size={24} /></div><span className="skill-label">Sign</span></div>
-            <div className="skill-chip" onClick={() => handleToolAction('company')}><div className="skill-glyph bg-company"><Building2 size={24} /></div><span className="skill-label">Company</span></div>
-            <div className="skill-chip" onClick={() => handleToolAction('chat')}><div className="skill-glyph bg-chat"><MessageSquare size={24} color="#00ac47" /></div><span className="skill-label">Chat</span></div>
-            <div className="skill-chip" onClick={() => handleToolAction('forms')}><div className="skill-glyph bg-forms"><FileStack size={24} color="#7248b9" /></div><span className="skill-label">Forms</span></div>
-            <div className="skill-chip" onClick={() => handleToolAction('keep')}><div className="skill-glyph bg-keep"><Paperclip size={24} color="#fbbc04" /></div><span className="skill-label">Keep</span></div>
-            <div className="skill-chip" onClick={() => handleToolAction('meet')}><div className="skill-glyph bg-meet"><Video size={24} /></div><span className="skill-label">Meet</span></div>
-            <div className="skill-chip" onClick={() => handleToolAction('whatsapp')}><div className="skill-glyph bg-whatsapp"><MessageSquare size={24} /></div><span className="skill-label">WhatsApp</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('profile')}><div className="skill-glyph bg-profile"><User size={28} /></div><span className="skill-label">Profile</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('tasks')}><div className="skill-glyph bg-tasks"><ListChecks size={28} /></div><span className="skill-label">Tasks</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('calendar')}><div className="skill-glyph bg-calendar"><Calendar size={28} /></div><span className="skill-label">Calendar</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('drive')}><div className="skill-glyph bg-drive"><FolderOpen size={28} /></div><span className="skill-label">Drive</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('google')}><div className="skill-glyph bg-google"><Search size={28} color="#4285F4" /></div><span className="skill-label">Google</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('signature')}><div className="skill-glyph bg-signature"><Signature size={28} /></div><span className="skill-label">Sign</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('company')}><div className="skill-glyph bg-company"><Building2 size={28} /></div><span className="skill-label">Company</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('chat')}><div className="skill-glyph bg-chat"><MessageSquare size={28} color="#00ac47" /></div><span className="skill-label">Chat</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('forms')}><div className="skill-glyph bg-forms"><FileStack size={28} color="#7248b9" /></div><span className="skill-label">Forms</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('keep')}><div className="skill-glyph bg-keep"><Paperclip size={28} color="#fbbc04" /></div><span className="skill-label">Keep</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('meet')}><div className="skill-glyph bg-meet"><Video size={28} /></div><span className="skill-label">Meet</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('whatsapp')}><div className="skill-glyph bg-whatsapp"><MessageSquare size={28} /></div><span className="skill-label">WhatsApp</span></div>
           </div>
         </div>
         <div className="skills-row" data-row="2">
           <div className="skills-track">
-            <div className="skill-chip" onClick={() => handleToolAction('settings')}><div className="skill-glyph bg-settings"><Settings size={24} /></div><span className="skill-label">Settings</span></div>
-            <div className="skill-chip" onClick={() => handleToolAction('tools')}><div className="skill-glyph bg-tools"><Wrench size={24} /></div><span className="skill-label">Tools</span></div>
-            <div className="skill-chip" onClick={() => handleToolAction('history')}><div className="skill-glyph bg-history"><History size={24} /></div><span className="skill-label">History</span></div>
-            <div className="skill-chip" onClick={() => handleToolAction('scanner')}><div className="skill-glyph bg-scanner"><QrCode size={24} /></div><span className="skill-label">Scanner</span></div>
-            <div className="skill-chip" onClick={() => handleToolAction('location')}><div className="skill-glyph bg-location"><MapPin size={24} /></div><span className="skill-label">Location</span></div>
-            <div className="skill-chip" onClick={() => handleToolAction('knowledge')}><div className="skill-glyph bg-knowledge"><Brain size={24} /></div><span className="skill-label">Knowledge</span></div>
-            <div className="skill-chip" onClick={() => handleToolAction('proposal')}><div className="skill-glyph bg-proposal"><Presentation size={24} /></div><span className="skill-label">Proposal</span></div>
-            <div className="skill-chip" onClick={() => handleToolAction('gmail')}><div className="skill-glyph bg-gmail"><Mail size={24} /></div><span className="skill-label">Mail</span></div>
-            <div className="skill-chip" onClick={() => handleToolAction('sheets')}><div className="skill-glyph bg-sheets"><Table size={24} /></div><span className="skill-label">Sheets</span></div>
-            <div className="skill-chip" onClick={() => handleToolAction('slides')}><div className="skill-glyph bg-slides"><FileStack size={24} /></div><span className="skill-label">Slides</span></div>
-            <div className="skill-chip" onClick={() => handleToolAction('contract')}><div className="skill-glyph bg-contract" style={{background: 'linear-gradient(135deg, #d4af37, #aa8222)'}}><Signature size={24} /></div><span className="skill-label">Contract</span></div>
-            <div className="skill-chip" onClick={() => handleToolAction('invoice')}><div className="skill-glyph bg-invoice" style={{background: 'linear-gradient(135deg, #60a5fa, #2563eb)'}}><FileStack size={24} /></div><span className="skill-label">Invoice</span></div>
-            <div className="skill-chip" onClick={() => handleToolAction('contacts')}><div className="skill-glyph bg-contacts"><User size={24} color="#1a73e8" /></div><span className="skill-label">Contacts</span></div>
-            <div className="skill-chip" onClick={() => handleToolAction('firebase')}><div className="skill-glyph bg-firebase" style={{background: '#ffca28'}}><Brain size={24} /></div><span className="skill-label">Firebase</span></div>
-            <div className="skill-chip" onClick={() => handleToolAction('docs')}><div className="skill-glyph bg-docs" style={{background: 'linear-gradient(135deg, #34d399, #059669)'}}><FileStack size={24} /></div><span className="skill-label">Docs</span></div>
-            <div className="skill-chip" onClick={() => handleToolAction('picker')}><div className="skill-glyph bg-picker"><Search size={24} /></div><span className="skill-label">Picker</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('settings')}><div className="skill-glyph bg-settings"><Settings size={28} /></div><span className="skill-label">Settings</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('tools')}><div className="skill-glyph bg-tools"><Wrench size={28} /></div><span className="skill-label">Tools</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('history')}><div className="skill-glyph bg-history"><History size={28} /></div><span className="skill-label">History</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('scanner')}><div className="skill-glyph bg-scanner"><QrCode size={28} /></div><span className="skill-label">Scanner</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('location')}><div className="skill-glyph bg-location"><MapPin size={28} /></div><span className="skill-label">Location</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('knowledge')}><div className="skill-glyph bg-knowledge"><Brain size={28} /></div><span className="skill-label">Knowledge</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('proposal')}><div className="skill-glyph bg-proposal"><Presentation size={28} /></div><span className="skill-label">Proposal</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('gmail')}><div className="skill-glyph bg-gmail"><Mail size={28} /></div><span className="skill-label">Mail</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('sheets')}><div className="skill-glyph bg-sheets"><Table size={28} /></div><span className="skill-label">Sheets</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('slides')}><div className="skill-glyph bg-slides"><FileStack size={28} /></div><span className="skill-label">Slides</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('contract')}><div className="skill-glyph bg-contract" style={{background: 'linear-gradient(135deg, #d4af37, #aa8222)'}}><Signature size={28} /></div><span className="skill-label">Contract</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('invoice')}><div className="skill-glyph bg-invoice" style={{background: 'linear-gradient(135deg, #60a5fa, #2563eb)'}}><FileStack size={28} /></div><span className="skill-label">Invoice</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('contacts')}><div className="skill-glyph bg-contacts"><User size={28} color="#1a73e8" /></div><span className="skill-label">Contacts</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('firebase')}><div className="skill-glyph bg-firebase" style={{background: '#ffca28'}}><Brain size={28} /></div><span className="skill-label">Firebase</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('docs')}><div className="skill-glyph bg-docs" style={{background: 'linear-gradient(135deg, #34d399, #059669)'}}><FileStack size={28} /></div><span className="skill-label">Docs</span></div>
+            <div className="skill-chip" onClick={() => handleToolAction('picker')}><div className="skill-glyph bg-picker"><Search size={28} /></div><span className="skill-label">Picker</span></div>
           </div>
         </div>
       </div>
 
-      <div className="sandbox-preview-shell" style={{ display: (isGenerating || activeWorkspaceResult) ? 'block' : 'none' }}>
-         <AgentTaskPanel />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <AgentTaskPanel />
+
+        {/* Chat Stream */}
+        {useUI((state) => !state.activeWorkspaceResult) && (
+          <main id="text-streaming-area" ref={chatAreaRef}>
+            <div id="conversation-container">
+              <div className="conversation-message ai">Hey Boss! I'm Beatrice. Connect your session!</div>
+              {filteredTurns.map((turn, i) => (
+                 <div key={i} className={`conversation-message ${turn.role === 'user' ? 'user' : 'ai'}`}>
+                    {turn.role === 'agent' ? (
+                      <StreamingText text={turn.text} isFinal={turn.isFinal} />
+                    ) : (
+                      turn.text
+                    )}
+                 </div>
+              ))}
+            </div>
+          </main>
+        )}
       </div>
 
-      <main className="main-content">
-        {/* Chat Stream */}
-        <main className="chat-area" id="text-streaming-area" ref={chatAreaRef}>
-          <div id="conversation-container">
-            <div className="conversation-message ai">Hey Boss! I'm Beatrice. Connect your session!</div>
-            {filteredTurns.map((turn, i) => (
-               <div key={i} className={`conversation-message ${turn.role === 'user' ? 'user' : 'ai'}`}>
-                  {turn.role === 'agent' ? (
-                    <StreamingText text={turn.text} isFinal={turn.isFinal} />
-                  ) : (
-                    turn.text
-                  )}
-               </div>
-            ))}
-          </div>
-        </main>
-      </main>
-
       {/* Bottom Dock */}
-      <div className="bottom-navbar">
+      <div className="bottom-dock">
         <div className="input-wrapper">
           <div className="input-bar">
             <button className="attach-btn" onClick={() => fileInputRef.current?.click()}><Paperclip size={20} /></button>
@@ -793,25 +742,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
           <div className="form-group" style={{ marginTop: '24px' }}>
             <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               Stored Memories
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{memories.length} item(s)</span>
-                <button 
-                  className="pill-btn"
-                  style={{ fontSize: '11px', padding: '4px 8px', backgroundColor: 'var(--accent-active)', color: 'var(--bg-main)' }}
-                  onClick={async () => {
-                    const user = auth.currentUser;
-                    if (!user) return;
-                    console.log('Saving all memories:', memories);
-                    try {
-                      const userRef = doc(db, 'users', user.uid);
-                      await setDoc(userRef, { memories: memories, updatedAt: new Date().toISOString() }, { merge: true });
-                      alert('Memories saved successfully!');
-                    } catch (e) {
-                      handleFirestoreError(e, OperationType.WRITE, `users/${user.uid}`);
-                    }
-                  }}
-                >Save All</button>
-              </div>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{memories.length} item(s)</span>
             </label>
             <div className="memory-list" style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {memories.length === 0 ? (
@@ -820,7 +751,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
                 </div>
               ) : (
                 memories.map((m, i) => (
-                  <div key={i} className="memory-item" style={{ padding: '12px', borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <div key={i} className="memory-item" style={{ padding: '12px', borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {editingMemoryIndex === i ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <textarea 
@@ -829,7 +760,6 @@ Output only natural spoken text. No stage directions, no brackets, no role label
                           onChange={(e) => setEditingMemoryValue(e.target.value)}
                           rows={2}
                           autoFocus
-                          style={{ width: '100%' }}
                         />
                         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                           <button 
@@ -851,20 +781,20 @@ Output only natural spoken text. No stage directions, no brackets, no role label
                           <div style={{ display: 'flex', gap: '4px', marginLeft: '12px' }}>
                             <button 
                               className="icon-btn" 
-                              style={{ color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}
+                              style={{ color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer' }}
                               onClick={() => {
                                 setEditingMemoryIndex(i);
                                 setEditingMemoryValue(m.content);
                               }}
                             >
-                              <Pencil size={14} />
+                              <Pencil size={12} />
                             </button>
                             <button 
                               className="icon-btn" 
-                              style={{ color: '#ff4d4d', background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}
+                              style={{ color: '#ff4d4d', background: 'transparent', border: 'none', cursor: 'pointer' }}
                               onClick={() => handleDeleteMemory(i)}
                             >
-                              <Trash2 size={14} />
+                              <Trash2 size={12} />
                             </button>
                           </div>
                         </div>
@@ -980,79 +910,29 @@ Output only natural spoken text. No stage directions, no brackets, no role label
       {/* WhatsApp Overlay */}
       <div id="overlay-whatsapp" className={`full-page-overlay ${activeOverlay === 'whatsapp' ? 'active' : ''}`}>
         <div className="overlay-header">
-          <div className="overlay-title">WhatsApp Integration</div>
+          <div className="overlay-title">WhatsApp Integrations</div>
           <button className="close-overlay-btn" onClick={() => setActiveOverlay(null)}><X size={18} /></button>
         </div>
         <div className="overlay-content" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', padding: 0 }}>
-            <div style={{ padding: '32px 20px', textAlign: 'center', backgroundColor: '#e0f2f1', margin: '20px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-               {whatsappStatus === 'loading' && (
-                 <div style={{ padding: '20px' }}>
-                    <div className="animate-spin" style={{ width: 40, height: 40, border: '4px solid #25d366', borderTopColor: 'transparent', borderRadius: '50%', margin: '0 auto 16px' }}></div>
-                    <p style={{ color: '#000' }}>Connecting to WhatsApp Service...</p>
+           <div style={{ padding: '20px', textAlign: 'center', backgroundColor: '#e0f2f1', margin: '20px', borderRadius: '12px' }}>
+              <QrCode size={120} color="#25d366" style={{ margin: '0 auto' }} />
+              <h3 style={{ color: '#075e54', marginTop: '16px' }}>Link Eburon to WhatsApp</h3>
+              <p style={{ color: '#000', opacity: 0.7, marginTop: '8px' }}>Open WhatsApp on your phone, go to Linked Devices, and scan this code.</p>
+           </div>
+           <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px 20px 20px' }}>
+             <h4 style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>Recent Chats</h4>
+             {[1, 2, 3].map(i => (
+               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '12px 0', borderBottom: '1px solid var(--border-color)' }}>
+                 <div style={{ width: 48, height: 48, borderRadius: '50%', backgroundColor: 'var(--surface-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <User size={24} color="var(--text-muted)" />
                  </div>
-               )}
-               
-               {whatsappStatus === 'qr' && whatsappQr && (
-                 <>
-                    <div style={{ backgroundColor: '#fff', padding: '16px', borderRadius: '12px', display: 'inline-block', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-                      <img src={whatsappQr.startsWith('http') ? whatsappQr : `data:image/png;base64,${whatsappQr}`} alt="WhatsApp QR" style={{ width: 200, height: 200 }} />
-                    </div>
-                    <h3 style={{ color: '#075e54', marginTop: '24px', fontWeight: 700 }}>Link Eburon to WhatsApp</h3>
-                    <p style={{ color: '#000', opacity: 0.7, marginTop: '8px', maxWidth: '300px', margin: '8px auto' }}>Open WhatsApp on your phone, go to Linked Devices, and scan this code.</p>
-                 </>
-               )}
-
-               {whatsappStatus === 'connected' && (
-                 <div style={{ padding: '20px' }}>
-                    <div style={{ width: 80, height: 80, backgroundColor: '#25d366', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: '#fff' }}>
-                      <Check size={40} />
-                    </div>
-                    <h3 style={{ color: '#075e54', fontWeight: 700 }}>WhatsApp Connected</h3>
-                    <p style={{ color: '#000', opacity: 0.7, marginTop: '8px' }}>Eburon is linked and ready for messaging.</p>
+                 <div style={{ flex: 1 }}>
+                   <div style={{ fontWeight: 600 }}>Mock Contact {i}</div>
+                   <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>Latest message preview goes here...</div>
                  </div>
-               )}
-
-               {whatsappStatus === 'error' && (
-                 <div style={{ padding: '20px' }}>
-                    <div style={{ width: 80, height: 80, backgroundColor: '#ea4335', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: '#fff' }}>
-                      <AlertCircle size={40} />
-                    </div>
-                    <h3 style={{ color: '#b91c1c', fontWeight: 700 }}>Connection Error</h3>
-                    <p style={{ color: '#000', opacity: 0.7, marginTop: '8px' }}>{whatsappError || 'Could not connect to WhatsApp service.'}</p>
-                 </div>
-               )}
-
-               {whatsappStatus === 'idle' && (
-                 <div>
-                    <QrCode size={120} color="#25d366" style={{ margin: '0 auto' }} />
-                    <h3 style={{ color: '#075e54', marginTop: '16px' }}>WhatsApp Integration</h3>
-                    <p style={{ color: '#000', opacity: 0.7, marginTop: '8px' }}>Initializing...</p>
-                 </div>
-               )}
-            </div>
-            
-             <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px 24px 24px' }}>
-               <h4 style={{ color: 'var(--text-muted)', marginBottom: '16px', fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em' }}>WhatsApp Bridge Activity</h4>
-               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                 {whatsappMessages.length > 0 ? (
-                   whatsappMessages.map((m: any) => (
-                     <div key={m.id} style={{ padding: '12px', backgroundColor: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                        <div style={{ fontSize: '12px', color: m.direction === 'sent' ? 'var(--accent-active)' : '#33b1ff', fontWeight: 600, marginBottom: '4px' }}>
-                          {m.direction === 'sent' ? 'SENT BY EBURON' : 'RECEIVED'} &bull; {m.phone}
-                        </div>
-                        <div style={{ fontSize: '14px' }}>{m.text}</div>
-                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '6px', textAlign: 'right' }}>
-                          {new Date(m.timestamp).toLocaleTimeString()}
-                        </div>
-                     </div>
-                   ))
-                 ) : (
-                   <div style={{ padding: '20px', backgroundColor: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--border-color)', textAlign: 'center', color: 'var(--text-muted)' }}>
-                     {whatsappStatus === 'connected' ? "No recent bridge activity." : "Scan QR to enable WhatsApp bridge."}
-                   </div>
-                 )}
                </div>
-             </div>
+             ))}
+           </div>
         </div>
       </div>
 
@@ -1069,15 +949,12 @@ Output only natural spoken text. No stage directions, no brackets, no role label
                 onScan={(result) => {
                   if (result && result.length > 0) {
                     const text = result[0].rawValue;
-                    const langSelect = document.getElementById('lang-select') as HTMLSelectElement;
-                    const lang = langSelect?.value || 'en';
                     setActiveOverlay(null);
-                    const scanMsg = `Supermarket Scanner scan: "${text}". Please identify this product (name, price/value, description). Explain this information in the language: ${lang}.`;
+                    const scanMsg = `Supermarket Scanner scan: "${text}". Please identify this product, its nutritional info, and check if it is available nearby.`;
                     if (connected) client.send({ text: scanMsg });
                     useLogStore.getState().addTurn({ role: 'user', text: scanMsg, isFinal: true });
                   }
                 }}
-                formats={['qr_code', 'ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf']}
                 components={{
                   tracker: true,
                   audio: false,
@@ -1090,8 +967,8 @@ Output only natural spoken text. No stage directions, no brackets, no role label
             ) : <Video size={48} color="#444" />}
           </div>
           <div className="form-group" style={{ width: '100%', maxWidth: '400px', marginTop: '24px' }}>
-            <label>Translate results to</label>
-            <select id="lang-select" className="form-control" defaultValue={navigator.language.split('-')[0] || 'en'}>
+            <label>Translate to</label>
+            <select className="form-control" defaultValue="en">
               <option value="en">English</option>
               <option value="nl">Dutch (Flemish)</option>
               <option value="fr">French</option>

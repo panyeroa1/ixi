@@ -556,22 +556,6 @@ export function useLiveApi({
            responsePayload = { datetime: new Date().toISOString(), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone };
         }
 
-        if (fc.name === 'control_sandbox') {
-           const { action, url, element_id, text, x, y } = fc.args as any;
-           const uiState = await import('../../lib/state');
-           uiState.useUI.getState().setIsGenerating(true);
-           uiState.useUI.getState().setActiveWorkspaceResult(null);
-           uiState.useSandboxStore.getState().setLastCommand({ action, url, element_id, text, x, y });
-           responsePayload = { status: `Executed sandbox action: ${action}` };
-        }
-
-        if (fc.name === 'get_sandbox_state') {
-           const uiState = await import('../../lib/state');
-           uiState.useUI.getState().setIsGenerating(true);
-           uiState.useUI.getState().setActiveWorkspaceResult(null);
-           responsePayload = uiState.useSandboxStore.getState().sandboxState;
-        }
-
         if (fc.name === 'open_browser_url') {
            const { url } = fc.args as any;
            window.open(url, '_blank');

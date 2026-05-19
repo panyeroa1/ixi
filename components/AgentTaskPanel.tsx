@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import { useUI } from '../lib/state';
-import { VPSSimulation } from './VPSSimulation';
 
 export function AgentTaskPanel() {
   const isGenerating = useUI((state) => state.isGenerating);
@@ -50,150 +49,119 @@ export function AgentTaskPanel() {
 
   }, [isGenerating, activeWorkspaceResult]);
 
+  if (!isGenerating && !activeWorkspaceResult) return null;
+
   return (
     <AnimatePresence>
       <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        initial={{ opacity: 0, height: 0 }}
+        animate={{ opacity: 1, height: activeWorkspaceResult ? '100%' : 'auto' }}
+        exit={{ opacity: 0, height: 0 }}
         className="agent-task-panel"
         style={{
+          width: '100%',
+          flex: activeWorkspaceResult ? 1 : 'none',
           display: 'flex',
           flexDirection: 'column',
           backgroundColor: '#0a0a0a',
           borderBottom: '1px solid var(--border-color)',
           overflow: 'hidden',
           zIndex: 4,
-          width: '100%',
-          height: '100%'
+          position: 'relative'
         }}
       >
-        {/* Sandbox Preview - Persistent Landscape Desktop View */}
+        {/* Sandbox Preview / Document Sandbox */}
         <div 
+          className="sandbox-preview" 
           style={{ 
             width: '100%',
-            height: '240px', // Fixed height for the landscape "window" on mobile
+            flex: activeWorkspaceResult ? 1 : 'none',
+            height: activeWorkspaceResult ? 'auto' : '200px', // compact landscape originally
             backgroundColor: '#111111',
             borderBottom: '1px solid var(--border-color)',
             position: 'relative',
             display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            overflow: 'hidden'
+            flexDirection: 'column'
           }}
         >
-          {/* Bezel Overlay Element */}
-          <div style={{
-            position: 'absolute',
-            top: '46%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            pointerEvents: 'none',
-            zIndex: 5
-          }}>
-             {/* Main Bezel */}
-             <div style={{
-               width: '324px',
-               height: '180px',
-               border: '10px solid #18191a',
-               borderBottom: '22px solid #151617',
-               borderRadius: '10px',
-               boxShadow: '0 15px 35px rgba(0,0,0,0.9), inset 0 0 0 1px #333, inset 0 0 15px rgba(0,0,0,0.8)',
-               position: 'relative',
-               background: 'transparent'
-             }}>
-                {/* Chin Light */}
-                <div style={{ position: 'absolute', bottom: '-13px', left: '50%', transform: 'translateX(-50%)', width: '4px', height: '4px', borderRadius: '50%', background: '#C8E653', boxShadow: '0 0 6px #C8E653', opacity: 0.8 }} />
-                
-                {/* Stand */}
-                <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: '35px', height: '25px', background: 'linear-gradient(to bottom, #111, #222)', boxShadow: 'inset 0 0 5px rgba(0,0,0,0.8)' }}>
-                  <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: '110px', height: '6px', background: '#2a2a2a', borderRadius: '4px 4px 0 0', boxShadow: '0 5px 15px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.1)' }}></div>
-                </div>
+           <div style={{ height: '30px', backgroundColor: '#000', display: 'flex', alignItems: 'center', padding: '0 12px', gap: '12px' }}>
+             <div style={{ display: 'flex', gap: '6px' }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#ff5f56' }} />
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#ffbd2e' }} />
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#27c93f' }} />
              </div>
-          </div>
-
-          <div style={{
-            width: '810px',
-            height: '450px',
-            transform: 'translate(-50%, -50%) scale(0.40)',
-            transformOrigin: 'center center',
-            position: 'absolute',
-            top: '46%',
-            left: '50%',
-            overflow: 'hidden',
-            backgroundColor: '#0f172a',
-            display: 'flex',
-            flexDirection: 'column',
-            zIndex: 10
-          }}>
-            <div style={{ flex: 1, position: 'relative', overflow: 'hidden', backgroundColor: '#0f172a' }}>
-              {activeWorkspaceResult?.artifact ? (
-                  activeWorkspaceResult.artifact.type === 'html' ? (
-                  <iframe 
-                      srcDoc={activeWorkspaceResult.artifact.content}
-                      style={{ width: '100%', height: '100%', border: 'none', backgroundColor: '#0f172a', color: '#fff' }}
-                      title="Beatrice Document Preview"
-                  />
-                  ) : activeWorkspaceResult.artifact.type === 'pdf' ? (
-                  <iframe 
-                      src={activeWorkspaceResult.artifact.content}
-                      style={{ width: '100%', height: '100%', border: 'none', backgroundColor: '#fff' }}
-                      title="PDF Preview"
-                  />
-                  ) : activeWorkspaceResult.artifact.type === 'markdown' ? (
-                    <div className="markdown-body" style={{ width: '100%', height: '100%', overflowY: 'auto', padding: '32px', backgroundColor: '#0f172a', color: '#fff', fontSize: '16px', boxSizing: 'border-box' }}>
-                      <ReactMarkdown>{activeWorkspaceResult.artifact.content}</ReactMarkdown>
-                    </div>
-                  ) : (
-                    <div style={{ width: '100%', height: '100%', overflowY: 'auto', padding: '32px', backgroundColor: '#0f172a', color: '#fff', fontSize: '16px', boxSizing: 'border-box' }}>
-                      <div style={{ fontWeight: 600, fontSize: '20px', marginBottom: '16px' }}>{activeWorkspaceResult.artifact.title || 'Document'}</div>
-                      <div style={{ whiteSpace: 'pre-wrap' }}>{activeWorkspaceResult.artifact.content}</div>
-                    </div>
-                  )
-              ) : (
-                  <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
-                    <VPSSimulation />
+             <div style={{ flex: 1, backgroundColor: '#222', height: '18px', borderRadius: '4px', opacity: 0.5 }}></div>
+             {activeWorkspaceResult && (
+               <button 
+                 onClick={() => { useUI.getState().setActiveWorkspaceResult(null); useUI.getState().setIsGenerating(false); }}
+                 style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '12px', padding: '0 4px' }}
+               >
+                 ✕
+               </button>
+             )}
+           </div>
+           
+           <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+             {/* Simulated content based on result */}
+             {activeWorkspaceResult?.artifact ? (
+                activeWorkspaceResult.artifact.type === 'html' ? (
+                 <iframe 
+                    srcDoc={activeWorkspaceResult.artifact.content}
+                    style={{ width: '100%', height: '100%', border: 'none', backgroundColor: '#fff', borderRadius: '0 0 4px 4px' }}
+                    title="Beatrice Document Preview"
+                 />
+                ) : activeWorkspaceResult.artifact.type === 'pdf' ? (
+                 <iframe 
+                    src={activeWorkspaceResult.artifact.content}
+                    style={{ width: '100%', height: '100%', border: 'none', backgroundColor: '#fff', borderRadius: '0 0 4px 4px' }}
+                    title="PDF Preview"
+                 />
+                ) : activeWorkspaceResult.artifact.type === 'markdown' ? (
+                  <div style={{ width: '100%', height: '100%', overflowY: 'auto', padding: '16px', backgroundColor: '#fff', color: '#000', fontSize: '14px', boxSizing: 'border-box' }}>
+                    <ReactMarkdown>{activeWorkspaceResult.artifact.content}</ReactMarkdown>
                   </div>
-              )}
-            </div>
-            
-            {/* Overlay if activeWorkspaceResult - small close button in sandbox corner */}
-            {activeWorkspaceResult && (
-              <button 
-                onClick={() => { useUI.getState().setActiveWorkspaceResult(null); useUI.getState().setIsGenerating(false); }}
-                style={{ position: 'absolute', top: 10, right: 10, width: 30, height: 30, borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', cursor: 'pointer', zIndex: 100 }}
-              >✕</button>
-            )}
-          </div>
+                ) : (
+                  <div style={{ width: '100%', height: '100%', overflowY: 'auto', padding: '16px', backgroundColor: '#000', color: '#fff', fontSize: '12px', boxSizing: 'border-box' }}>
+                    <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: '8px' }}>{activeWorkspaceResult.artifact.title || 'Document'}</div>
+                    <div style={{ whiteSpace: 'pre-wrap' }}>{activeWorkspaceResult.artifact.content}</div>
+                  </div>
+                )
+             ) : (
+                <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                   <div className="spinner" style={{ marginBottom: '12px', width: '20px', height: '20px', border: '2px solid rgba(165,180,252,0.2)', borderTopColor: '#cbfb45', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                   <div style={{ fontSize: '13px' }}>{currentStep}</div>
+                </div>
+             )}
+           </div>
         </div>
 
-        {/* Logs / Activity Panel - Always visible below sandbox while working */}
-        <div 
-          className="activity-logs"
-          style={{
-            padding: '12px 16px',
-            backgroundColor: '#0a0a0a',
-            maxHeight: '100px',
-            overflowY: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-            zIndex: 1,
-            borderBottom: '1px solid var(--border-color)'
-          }}
-        >
-          <div style={{ fontSize: '10px', textTransform: 'uppercase', color: '#C8E653', letterSpacing: '0.05em', marginBottom: '2px', fontWeight: 700 }}>
-            {activeWorkspaceResult ? 'Final Output' : 'Live Agent Activity'}
+        {/* Logs / Activity Panel */}
+        {!activeWorkspaceResult && (
+          <div 
+            className="activity-logs"
+            style={{
+              padding: '12px 16px',
+              backgroundColor: '#0a0a0a',
+              height: '100px',
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px'
+            }}
+          >
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-label)', letterSpacing: '0.05em', marginBottom: '4px' }}>
+              Recent Steps
+            </div>
+            {logs.map((log) => (
+               <div key={log.id} style={{ fontSize: '13px', color: 'var(--text-muted)', display: 'flex', gap: '8px' }}>
+                  <span style={{ color: 'var(--text-label)', opacity: 0.5 }}>{log.time}</span>
+                  <span>{log.message}</span>
+               </div>
+            ))}
+            {/* Scroll anchor */}
+            {logs.length > 0 && <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth' })} />}
           </div>
-          {logs.slice(-3).map((log) => (
-             <div key={log.id} style={{ fontSize: '12px', color: '#a1a1aa', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <div style={{ width: 4, height: 4, borderRadius: '50%', backgroundColor: '#C8E653' }}></div>
-                <span>{log.message}</span>
-             </div>
-          ))}
-          {/* Scroll anchor */}
-          {logs.length > 0 && <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth' })} />}
-        </div>
+        )}
       </motion.div>
     </AnimatePresence>
   );

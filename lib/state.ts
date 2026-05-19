@@ -428,38 +428,6 @@ export const workspaceTools: FunctionCall[] = [
       },
       required: ["text"]
     }
-  },
-  {
-    name: "control_sandbox",
-    description: "Controls the desktop sandbox environment. Use this to navigate to URLs, click elements, type text, or close the active view inside the sandbox.",
-    isEnabled: true,
-    scheduling: FunctionResponseScheduling.INTERRUPT,
-    parameters: {
-      type: "OBJECT",
-      properties: {
-        action: { 
-          type: "STRING", 
-          enum: ["NAVIGATE", "CLICK", "TYPE", "SCROLL", "CLOSE"],
-          description: "The action to perform."
-        },
-        url: { type: "STRING", description: "URL for NAVIGATE action." },
-        element_id: { type: "STRING", description: "Target element ID for CLICK/TYPE." },
-        text: { type: "STRING", description: "Text for TYPE action." },
-        x: { type: "NUMBER", description: "X coordinate for raw CLICK." },
-        y: { type: "NUMBER", description: "Y coordinate for raw CLICK." }
-      },
-      required: ["action"]
-    }
-  },
-  {
-    name: "get_sandbox_state",
-    description: "Retrieves the current state of the desktop sandbox (active URL, visible markers, and last activity). Use this to 'see' what is currently rendered.",
-    isEnabled: true,
-    scheduling: FunctionResponseScheduling.INTERRUPT,
-    parameters: {
-      type: "OBJECT",
-      properties: {}
-    }
   }
 ];
 
@@ -662,28 +630,4 @@ export const useLogStore = create<{
     });
   },
   clearTurns: () => set({ turns: [] }),
-}));
-
-/**
- * Sandbox
- */
-export interface SandboxCommand {
-  action: 'NAVIGATE' | 'CLICK' | 'TYPE' | 'SCROLL' | 'CLOSE';
-  url?: string;
-  element_id?: string;
-  text?: string;
-  x?: number;
-  y?: number;
-}
-
-export const useSandboxStore = create<{
-  lastCommand: SandboxCommand | null;
-  setLastCommand: (command: SandboxCommand | null) => void;
-  sandboxState: any;
-  setSandboxState: (state: any) => void;
-}>(set => ({
-  lastCommand: null,
-  setLastCommand: (command) => set({ lastCommand: command }),
-  sandboxState: { url: 'about:blank', history: [] },
-  setSandboxState: (state) => set({ sandboxState: state }),
 }));

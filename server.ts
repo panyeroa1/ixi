@@ -4,7 +4,6 @@ import { createServer as createViteServer } from 'vite';
 import admin from 'firebase-admin';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
-import fs from 'fs';
 
 dotenv.config();
 
@@ -12,37 +11,23 @@ dotenv.config();
 const IS_PROD = process.env.NODE_ENV === 'production';
 const DIST_PATH = path.join(process.cwd(), 'dist');
 
-// Initialize Firebase Admin with fallbacks
+// Initialize Firebase Admin lazily
+let adminInitialized = false;
 function getFirebaseAdmin() {
-  if (admin.apps.length === 0) {
-    let projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID;
-    
-    if (!projectId) {
+  if (!adminInitialized) {
+    const projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID;
+    if (projectId) {
       try {
-        const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
-        if (fs.existsSync(configPath)) {
-          const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-          projectId = config.projectId;
-        }
+        admin.initializeApp({
+          projectId: projectId,
+        });
+        adminInitialized = true;
+        console.log('Firebase Admin initialized');
       } catch (e) {
-        console.warn('Failed to read firebase-applet-config.json:', e);
+        console.warn('Firebase Admin initialization failed:', e);
       }
-    }
-
-    try {
-      if (projectId) {
-        admin.initializeApp({ projectId });
-        console.log('Firebase Admin initialized with Project ID:', projectId);
-      } else {
-        // Try default initialization (works on GCP)
-        admin.initializeApp();
-        console.log('Firebase Admin initialized with default credentials');
-      }
-    } catch (e: any) {
-      if (e.code === 'app/duplicate-app') {
-        return admin;
-      }
-      console.error('Firebase Admin initialization failed:', e.message);
+    } else {
+      console.warn('FIREBASE_PROJECT_ID not set, Firebase Admin not initialized');
     }
   }
   return admin;
@@ -57,9 +42,6 @@ async function startServer() {
   const app = express();
   const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
-  // Initialize early
-  getFirebaseAdmin();
-
   app.use(express.json());
 
   // Auth Middleware
@@ -70,13 +52,7 @@ async function startServer() {
     if (!token) return res.sendStatus(401);
 
     try {
-      const fbAdmin = getFirebaseAdmin();
-      if (fbAdmin.apps.length === 0) {
-        console.warn('Auth skipped: Firebase Admin not initialized');
-        // Handle mock case or error
-        return res.status(503).send('Authentication service unavailable');
-      }
-      const decodedToken = await fbAdmin.auth().verifyIdToken(token);
+      const decodedToken = await getFirebaseAdmin().auth().verifyIdToken(token);
       req.user = decodedToken;
       next();
     } catch (error) {
@@ -223,20 +199,7 @@ async function startServer() {
       }
 
       const response = await fetch(`${gowaUrl}/instance/connect`, { headers });
-      const text = await response.text();
-      try {
-        const json = JSON.parse(text);
-        // Normalize response to { status, qr?, message? }
-        let status = 'connected';
-        if (json.status === 'qr' || json.qr) status = 'qr';
-        else if (json.status === 'loading') status = 'loading';
-        else if (json.status === 'error') status = 'error';
-
-        res.json({ status, qr: json.qr || json.qr_code, message: json.message || json.status });
-      } catch (e) {
-        console.error('WhatsApp Bridge response is not valid JSON:', text);
-        res.status(502).json({ error: 'WhatsApp Bridge returned an invalid response (expected JSON)', details: text.substring(0, 50) });
-      }
+      res.json(await response.json());
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
@@ -285,21 +248,6 @@ async function startServer() {
       res.status(500).json({ error: e.message });
     }
   });
-  app.get('/api/whatsapp/messages', authenticateToken, async (req: any, res) => {
-    try {
-      const firestore = getFirebaseAdmin().firestore();
-      const snapshot = await firestore.collection('users').doc(req.user.uid).collection('whatsapp_messages')
-        .orderBy('timestamp', 'desc')
-        .limit(20)
-        .get();
-      
-      const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      res.json(messages);
-    } catch (e: any) {
-      res.status(500).json({ error: e.message });
-    }
-  });
-
   if (!IS_PROD) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
