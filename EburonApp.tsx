@@ -1054,8 +1054,10 @@ Output only natural spoken text. No stage directions, no brackets, no role label
                 onScan={(result) => {
                   if (result && result.length > 0) {
                     const text = result[0].rawValue;
+                    const langSelect = document.getElementById('lang-select') as HTMLSelectElement;
+                    const lang = langSelect?.value || 'en';
                     setActiveOverlay(null);
-                    const scanMsg = `Supermarket Scanner scan: "${text}". Please identify this product, its nutritional info, and check if it is available nearby.`;
+                    const scanMsg = `Supermarket Scanner scan: "${text}". Please identify this product (name, price/value, description). Explain this information in the language: ${lang}.`;
                     if (connected) client.send({ text: scanMsg });
                     useLogStore.getState().addTurn({ role: 'user', text: scanMsg, isFinal: true });
                   }
@@ -1072,8 +1074,8 @@ Output only natural spoken text. No stage directions, no brackets, no role label
             ) : <Video size={48} color="#444" />}
           </div>
           <div className="form-group" style={{ width: '100%', maxWidth: '400px', marginTop: '24px' }}>
-            <label>Translate to</label>
-            <select className="form-control" defaultValue="en">
+            <label>Translate results to</label>
+            <select id="lang-select" className="form-control" defaultValue={navigator.language.split('-')[0] || 'en'}>
               <option value="en">English</option>
               <option value="nl">Dutch (Flemish)</option>
               <option value="fr">French</option>

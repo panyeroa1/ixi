@@ -294,13 +294,16 @@
 
     @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
-    /* Layout fixes for Desktop side-by-side AgentTaskPanel */
+    /* ---------------------------------------------------
+       Layout fixes for Desktop side-by-side AgentTaskPanel
+    --------------------------------------------------- */
     .main-content-layout {
       flex: 1;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
+      overflow: hidden; /* Important for scrolling internals */
       min-height: 0;
+      position: relative;
     }
 
     .desktop-task-panel-wrapper {
