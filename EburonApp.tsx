@@ -18,6 +18,7 @@ import {
   FileStack, Paperclip, Send, Mic, Cast, X, Check, Save, RotateCcw,
   Plug, Lock, Pencil, Maximize2
 } from 'lucide-react';
+import { Scanner } from '@yudiel/react-qr-scanner';
 import { ArtifactOverlay } from './components/ArtifactOverlay';
 
 function StreamingText({ text, isFinal }: { text: string; isFinal: boolean }) {

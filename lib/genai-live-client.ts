@@ -154,8 +154,23 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
       this.emit('error', new ErrorEvent('Client is not connected'));
       return;
     }
+
     chunks.forEach(chunk => {
-      this.session!.sendRealtimeInput({ media: chunk });
+      if (chunk.mimeType.includes('audio')) {
+        this.session!.sendRealtimeInput({ audio: chunk });
+      } else if (chunk.mimeType.includes('video') || chunk.mimeType.includes('image')) {
+        this.session!.sendRealtimeInput({ video: chunk });
+      } else if (chunk.mimeType.includes('text')) {
+        // Assume data is string text for 'text/*' mimeTypes, usually text/plain or text/csv
+        // The API expect { text: string }
+        // If data is base64 encoded text, we need to handle that, but text is usually passed as raw string in data or base64.
+        // Wait, if it is base64 in data, we should probably decode it. 
+        // Typically sendRealtimeInput chunks.data is a base64 from audio. For text we can just send it as { text: chunk.data } for now hoping it's raw string, or use the regular send({text}).
+        this.session!.sendRealtimeInput({ text: chunk.data });
+      } else {
+        // Fallback for text or other types if supported, or just send what we have
+        this.session!.sendRealtimeInput({ media: chunk });
+      }
     });
 
     let hasAudio = false;

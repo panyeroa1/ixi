@@ -447,7 +447,6 @@ const systemPrompts: Record<Template, string> = {
 import { DEFAULT_LIVE_API_MODEL, DEFAULT_VOICE } from './constants';
 import {
   FunctionResponse,
-  FunctionResponseScheduling,
   LiveServerToolCall,
 } from '@google/genai';
 
@@ -593,8 +592,8 @@ export interface LiveClientToolResponse {
 }
 export interface GroundingChunk {
   web?: {
-    uri: string;
-    title: string;
+    uri?: string;
+    title?: string;
   };
 }
 
