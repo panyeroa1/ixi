@@ -16,11 +16,12 @@ import {
   Building2, Video, MessageSquare, Settings, Wrench, History, 
   Trash2, QrCode, MapPin, Brain, Presentation, Mail, Table, 
   FileStack, Paperclip, Send, Mic, Cast, X, Check, Save, RotateCcw,
-  Plug, Lock, Pencil, Maximize2
+  Plug, Lock, Pencil, Maximize2, AlertCircle
 } from 'lucide-react';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { ArtifactOverlay } from './components/ArtifactOverlay';
 import { AgentTaskPanel } from './components/AgentTaskPanel';
+import { connectWhatsapp, sendWhatsappMessage, fetchWhatsappMessages } from './lib/api-client';
 
 function StreamingText({ text, isFinal }: { text: string; isFinal: boolean }) {
   const [displayedText, setDisplayedText] = useState(isFinal ? text : "");
@@ -116,6 +117,46 @@ export default function EburonApp() {
   const [isPickerLoaded, setIsPickerLoaded] = useState(false);
   const [isVideoFullScreen, setIsVideoFullScreen] = useState(false);
   const [isMeetOpen, setIsMeetOpen] = useState(false);
+
+  // WhatsApp State
+  const [whatsappStatus, setWhatsappStatus] = useState<'idle' | 'loading' | 'connected' | 'qr' | 'error'>('idle');
+  const [whatsappQr, setWhatsappQr] = useState<string | null>(null);
+  const [whatsappError, setWhatsappError] = useState<string | null>(null);
+  const [whatsappMessages, setWhatsappMessages] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (activeOverlay === 'whatsapp') {
+      const initWhatsapp = async () => {
+        setWhatsappStatus('loading');
+        try {
+          const res = await connectWhatsapp();
+          if (res.status === 'CONNECTED') {
+            setWhatsappStatus('connected');
+            // Fetch real messages
+            fetchWhatsappMessages().then(msgs => setWhatsappMessages(msgs)).catch(console.error);
+          } else if (res.qr) {
+            setWhatsappQr(res.qr);
+            setWhatsappStatus('qr');
+          } else if (res.status === 'INITIALIZING' || res.status === 'DISCONNECTED') {
+            if (res.qr_code) {
+               setWhatsappQr(res.qr_code);
+               setWhatsappStatus('qr');
+            } else {
+               setWhatsappStatus('error');
+               setWhatsappError('Failed to retrieve connection QR.');
+            }
+          } else {
+            setWhatsappStatus('connected');
+            fetchWhatsappMessages().then(msgs => setWhatsappMessages(msgs)).catch(console.error);
+          }
+        } catch (e: any) {
+          setWhatsappStatus('error');
+          setWhatsappError(e.message);
+        }
+      };
+      initWhatsapp();
+    }
+  }, [activeOverlay]);
 
   useEffect(() => {
     const loadPicker = () => {
@@ -296,6 +337,16 @@ ICON COMMANDS REFERENCE (When the user clicks these, they send these exact phras
 
 HTML ARTIFACTS:
 ALWAYS use generate_artifact(type="html", ...) for documents like contracts, invoices, dashboards, or signature pads. Include "Download PDF" or "Export" buttons in the HTML using standard browser APIs (e.g., window.print()). Every document must be professional, self-contained, and interactive.
+
+DESKTOP SANDBOX & VISUAL CONTROL:
+You operate within a sophisticated Desktop Sandbox environment (the 'sandbox-preview'). 
+1. **Visual Awareness**: You can "see" the sandbox by calling \`get_sandbox_state\`. Always call this to confirm results of your actions.
+2. **Interactive Control**: Control it using \`control_sandbox\`. 
+   - NAVIGATE: Use this to visit URLs.
+   - CLICK: Target elements by ID (e.g., 'vps-g-search', 'vps-address-bar') or coordinates.
+   - TYPE: Enter text.
+   - CLOSE: Reset or close active windows.
+3. **Behavior**: You are operating a desktop-grade environment inside the app. When the user asks to "search" or "go to", use these tools to drive the visual experience.
 
 ASSET STUDIO:
 When the user asks to "create all pages and function tools from the icons" or generate the Eburon AI Asset + Document Studio, call the \`open_eburon_asset_studio\` tool to instantly open the complete suite of brand assets and HTML documents.
@@ -607,22 +658,20 @@ Output only natural spoken text. No stage directions, no brackets, no role label
         <AgentTaskPanel />
 
         {/* Chat Stream */}
-        {useUI((state) => !state.activeWorkspaceResult) && (
-          <main id="text-streaming-area" ref={chatAreaRef}>
-            <div id="conversation-container">
-              <div className="conversation-message ai">Hey Boss! I'm Beatrice. Connect your session!</div>
-              {filteredTurns.map((turn, i) => (
-                 <div key={i} className={`conversation-message ${turn.role === 'user' ? 'user' : 'ai'}`}>
-                    {turn.role === 'agent' ? (
-                      <StreamingText text={turn.text} isFinal={turn.isFinal} />
-                    ) : (
-                      turn.text
-                    )}
-                 </div>
-              ))}
-            </div>
-          </main>
-        )}
+        <main id="text-streaming-area" ref={chatAreaRef}>
+          <div id="conversation-container">
+            <div className="conversation-message ai">Hey Boss! I'm Beatrice. Connect your session!</div>
+            {filteredTurns.map((turn, i) => (
+               <div key={i} className={`conversation-message ${turn.role === 'user' ? 'user' : 'ai'}`}>
+                  {turn.role === 'agent' ? (
+                    <StreamingText text={turn.text} isFinal={turn.isFinal} />
+                  ) : (
+                    turn.text
+                  )}
+               </div>
+            ))}
+          </div>
+        </main>
       </div>
 
       {/* Bottom Dock */}
@@ -912,29 +961,79 @@ Output only natural spoken text. No stage directions, no brackets, no role label
       {/* WhatsApp Overlay */}
       <div id="overlay-whatsapp" className={`full-page-overlay ${activeOverlay === 'whatsapp' ? 'active' : ''}`}>
         <div className="overlay-header">
-          <div className="overlay-title">WhatsApp Integrations</div>
+          <div className="overlay-title">WhatsApp Integration</div>
           <button className="close-overlay-btn" onClick={() => setActiveOverlay(null)}><X size={18} /></button>
         </div>
         <div className="overlay-content" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', padding: 0 }}>
-           <div style={{ padding: '20px', textAlign: 'center', backgroundColor: '#e0f2f1', margin: '20px', borderRadius: '12px' }}>
-              <QrCode size={120} color="#25d366" style={{ margin: '0 auto' }} />
-              <h3 style={{ color: '#075e54', marginTop: '16px' }}>Link Eburon to WhatsApp</h3>
-              <p style={{ color: '#000', opacity: 0.7, marginTop: '8px' }}>Open WhatsApp on your phone, go to Linked Devices, and scan this code.</p>
-           </div>
-           <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px 20px 20px' }}>
-             <h4 style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>Recent Chats</h4>
-             {[1, 2, 3].map(i => (
-               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '12px 0', borderBottom: '1px solid var(--border-color)' }}>
-                 <div style={{ width: 48, height: 48, borderRadius: '50%', backgroundColor: 'var(--surface-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <User size={24} color="var(--text-muted)" />
+            <div style={{ padding: '32px 20px', textAlign: 'center', backgroundColor: '#e0f2f1', margin: '20px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+               {whatsappStatus === 'loading' && (
+                 <div style={{ padding: '20px' }}>
+                    <div className="animate-spin" style={{ width: 40, height: 40, border: '4px solid #25d366', borderTopColor: 'transparent', borderRadius: '50%', margin: '0 auto 16px' }}></div>
+                    <p style={{ color: '#000' }}>Connecting to WhatsApp Service...</p>
                  </div>
-                 <div style={{ flex: 1 }}>
-                   <div style={{ fontWeight: 600 }}>Mock Contact {i}</div>
-                   <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>Latest message preview goes here...</div>
+               )}
+               
+               {whatsappStatus === 'qr' && whatsappQr && (
+                 <>
+                    <div style={{ backgroundColor: '#fff', padding: '16px', borderRadius: '12px', display: 'inline-block', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                      <img src={whatsappQr.startsWith('http') ? whatsappQr : `data:image/png;base64,${whatsappQr}`} alt="WhatsApp QR" style={{ width: 200, height: 200 }} />
+                    </div>
+                    <h3 style={{ color: '#075e54', marginTop: '24px', fontWeight: 700 }}>Link Eburon to WhatsApp</h3>
+                    <p style={{ color: '#000', opacity: 0.7, marginTop: '8px', maxWidth: '300px', margin: '8px auto' }}>Open WhatsApp on your phone, go to Linked Devices, and scan this code.</p>
+                 </>
+               )}
+
+               {whatsappStatus === 'connected' && (
+                 <div style={{ padding: '20px' }}>
+                    <div style={{ width: 80, height: 80, backgroundColor: '#25d366', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: '#fff' }}>
+                      <Check size={40} />
+                    </div>
+                    <h3 style={{ color: '#075e54', fontWeight: 700 }}>WhatsApp Connected</h3>
+                    <p style={{ color: '#000', opacity: 0.7, marginTop: '8px' }}>Eburon is linked and ready for messaging.</p>
                  </div>
+               )}
+
+               {whatsappStatus === 'error' && (
+                 <div style={{ padding: '20px' }}>
+                    <div style={{ width: 80, height: 80, backgroundColor: '#ea4335', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: '#fff' }}>
+                      <AlertCircle size={40} />
+                    </div>
+                    <h3 style={{ color: '#b91c1c', fontWeight: 700 }}>Connection Error</h3>
+                    <p style={{ color: '#000', opacity: 0.7, marginTop: '8px' }}>{whatsappError || 'Could not connect to WhatsApp service.'}</p>
+                 </div>
+               )}
+
+               {whatsappStatus === 'idle' && (
+                 <div>
+                    <QrCode size={120} color="#25d366" style={{ margin: '0 auto' }} />
+                    <h3 style={{ color: '#075e54', marginTop: '16px' }}>WhatsApp Integration</h3>
+                    <p style={{ color: '#000', opacity: 0.7, marginTop: '8px' }}>Initializing...</p>
+                 </div>
+               )}
+            </div>
+            
+             <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px 24px 24px' }}>
+               <h4 style={{ color: 'var(--text-muted)', marginBottom: '16px', fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em' }}>WhatsApp Bridge Activity</h4>
+               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                 {whatsappMessages.length > 0 ? (
+                   whatsappMessages.map((m: any) => (
+                     <div key={m.id} style={{ padding: '12px', backgroundColor: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                        <div style={{ fontSize: '12px', color: m.direction === 'sent' ? 'var(--accent-active)' : '#33b1ff', fontWeight: 600, marginBottom: '4px' }}>
+                          {m.direction === 'sent' ? 'SENT BY EBURON' : 'RECEIVED'} &bull; {m.phone}
+                        </div>
+                        <div style={{ fontSize: '14px' }}>{m.text}</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '6px', textAlign: 'right' }}>
+                          {new Date(m.timestamp).toLocaleTimeString()}
+                        </div>
+                     </div>
+                   ))
+                 ) : (
+                   <div style={{ padding: '20px', backgroundColor: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--border-color)', textAlign: 'center', color: 'var(--text-muted)' }}>
+                     {whatsappStatus === 'connected' ? "No recent bridge activity." : "Scan QR to enable WhatsApp bridge."}
+                   </div>
+                 )}
                </div>
-             ))}
-           </div>
+             </div>
         </div>
       </div>
 

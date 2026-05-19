@@ -248,6 +248,21 @@ async function startServer() {
       res.status(500).json({ error: e.message });
     }
   });
+  app.get('/api/whatsapp/messages', authenticateToken, async (req: any, res) => {
+    try {
+      const firestore = getFirebaseAdmin().firestore();
+      const snapshot = await firestore.collection('users').doc(req.user.uid).collection('whatsapp_messages')
+        .orderBy('timestamp', 'desc')
+        .limit(20)
+        .get();
+      
+      const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      res.json(messages);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   if (!IS_PROD) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
