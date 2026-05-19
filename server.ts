@@ -16,18 +16,15 @@ let adminInitialized = false;
 function getFirebaseAdmin() {
   if (!adminInitialized) {
     const projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID;
-    if (projectId) {
-      try {
-        admin.initializeApp({
-          projectId: projectId,
-        });
-        adminInitialized = true;
-        console.log('Firebase Admin initialized');
-      } catch (e) {
-        console.warn('Firebase Admin initialization failed:', e);
-      }
-    } else {
-      console.warn('FIREBASE_PROJECT_ID not set, Firebase Admin not initialized');
+    
+    // Always call initializeApp, even if projectId is undefined (it might work with local credentials or environment settings)
+    try {
+      admin.initializeApp(projectId ? { projectId } : {});
+      adminInitialized = true;
+      console.log('Firebase Admin initialized', projectId ? `with project ID: ${projectId}` : 'with default credentials');
+    } catch (e) {
+      console.error('Firebase Admin initialization failed:', e);
+      throw new Error('Firebase Admin initialization failed: ' + e);
     }
   }
   return admin;
