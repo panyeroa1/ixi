@@ -612,12 +612,11 @@ Output only natural spoken text. No stage directions, no brackets, no role label
         </div>
       </header>
 
-      {/* Skills Rail - Hidden during generation/results */}
-      {useUI((state) => !state.isGenerating && !state.activeWorkspaceResult) && (
-        <div id="skills-rail">
-          <div className="skills-row" data-row="1">
-            <div className="skills-track">
-              <div className="skill-chip" onClick={() => handleToolAction('profile')}><div className="skill-glyph bg-profile"><User size={24} /></div><span className="skill-label">Profile</span></div>
+      {/* Skills Rail - Always in DOM, hide via CSS if needed to prevent layout jumping */}
+      <div id="skills-rail" style={{ display: (isGenerating || activeWorkspaceResult) ? 'none' : 'flex' }}>
+        <div className="skills-row" data-row="1">
+          <div className="skills-track">
+            <div className="skill-chip" onClick={() => handleToolAction('profile')}><div className="skill-glyph bg-profile"><User size={24} /></div><span className="skill-label">Profile</span></div>
             <div className="skill-chip" onClick={() => handleToolAction('tasks')}><div className="skill-glyph bg-tasks"><ListChecks size={24} /></div><span className="skill-label">Tasks</span></div>
             <div className="skill-chip" onClick={() => handleToolAction('calendar')}><div className="skill-glyph bg-calendar"><Calendar size={24} /></div><span className="skill-label">Calendar</span></div>
             <div className="skill-chip" onClick={() => handleToolAction('drive')}><div className="skill-glyph bg-drive"><FolderOpen size={24} /></div><span className="skill-label">Drive</span></div>
@@ -652,14 +651,11 @@ Output only natural spoken text. No stage directions, no brackets, no role label
           </div>
         </div>
       </div>
-      )}
 
       <div className="main-content">
-        {(isGenerating || activeWorkspaceResult) && (
-          <div className="sandbox-preview-shell">
-            <AgentTaskPanel />
-          </div>
-        )}
+        <div className="sandbox-preview-shell" style={{ display: (isGenerating || activeWorkspaceResult) ? 'block' : 'none' }}>
+           <AgentTaskPanel />
+        </div>
 
         {/* Chat Stream */}
         <main className="chat-area" id="text-streaming-area" ref={chatAreaRef}>
@@ -797,7 +793,25 @@ Output only natural spoken text. No stage directions, no brackets, no role label
           <div className="form-group" style={{ marginTop: '24px' }}>
             <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               Stored Memories
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{memories.length} item(s)</span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{memories.length} item(s)</span>
+                <button 
+                  className="pill-btn"
+                  style={{ fontSize: '11px', padding: '4px 8px', backgroundColor: 'var(--accent-active)', color: 'var(--bg-main)' }}
+                  onClick={async () => {
+                    const user = auth.currentUser;
+                    if (!user) return;
+                    console.log('Saving all memories:', memories);
+                    try {
+                      const userRef = doc(db, 'users', user.uid);
+                      await setDoc(userRef, { memories: memories, updatedAt: new Date().toISOString() }, { merge: true });
+                      alert('Memories saved successfully!');
+                    } catch (e) {
+                      handleFirestoreError(e, OperationType.WRITE, `users/${user.uid}`);
+                    }
+                  }}
+                >Save All</button>
+              </div>
             </label>
             <div className="memory-list" style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {memories.length === 0 ? (
@@ -806,7 +820,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
                 </div>
               ) : (
                 memories.map((m, i) => (
-                  <div key={i} className="memory-item" style={{ padding: '12px', borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div key={i} className="memory-item" style={{ padding: '12px', borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
                     {editingMemoryIndex === i ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <textarea 
@@ -815,6 +829,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
                           onChange={(e) => setEditingMemoryValue(e.target.value)}
                           rows={2}
                           autoFocus
+                          style={{ width: '100%' }}
                         />
                         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                           <button 
@@ -836,20 +851,20 @@ Output only natural spoken text. No stage directions, no brackets, no role label
                           <div style={{ display: 'flex', gap: '4px', marginLeft: '12px' }}>
                             <button 
                               className="icon-btn" 
-                              style={{ color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                              style={{ color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}
                               onClick={() => {
                                 setEditingMemoryIndex(i);
                                 setEditingMemoryValue(m.content);
                               }}
                             >
-                              <Pencil size={12} />
+                              <Pencil size={14} />
                             </button>
                             <button 
                               className="icon-btn" 
-                              style={{ color: '#ff4d4d', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                              style={{ color: '#ff4d4d', background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}
                               onClick={() => handleDeleteMemory(i)}
                             >
-                              <Trash2 size={12} />
+                              <Trash2 size={14} />
                             </button>
                           </div>
                         </div>
