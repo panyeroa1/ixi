@@ -175,9 +175,7 @@ export default function EburonApp() {
   const [message, setMessage] = useState('');
   const [memories, setMemories] = useState<any[]>([]);
   const [editingMemoryIndex, setEditingMemoryIndex] = useState<number | null>(null);
-  const [editingMemoryType, setEditingMemoryType] = useState<string>('');
-  const [newMemoryContent, setNewMemoryContent] = useState<string>('');
-  const [newMemoryType, setNewMemoryType] = useState<string>('Personal');
+  const [editingMemoryValue, setEditingMemoryValue] = useState<string>('');
   const chatAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -519,47 +517,17 @@ When using tools, think silently but speak naturally after receiving results.` }
     }
   };
 
-  const handleUpdateMemory = async (index: number, newValue: string, newType: string) => {
+  const handleUpdateMemory = async (index: number, newValue: string) => {
     const user = auth.currentUser;
     if (!user) return;
     const newMemories = [...memories];
-    newMemories[index] = { 
-      ...newMemories[index], 
-      content: newValue, 
-      type: newType,
-      updatedAt: new Date().toISOString() 
-    };
+    newMemories[index] = { ...newMemories[index], content: newValue, updatedAt: new Date().toISOString() };
     
     try {
       const userRef = doc(db, 'users', user.uid);
       await setDoc(userRef, { memories: newMemories }, { merge: true });
       setMemories(newMemories);
       setEditingMemoryIndex(null);
-    } catch (e) {
-      handleFirestoreError(e, OperationType.WRITE, `users/${user.uid}`);
-    }
-  };
-
-  const handleAddMemory = async () => {
-    if (!newMemoryContent.trim()) return;
-    const user = auth.currentUser;
-    if (!user) return;
-    
-    const newMemory = {
-      content: newMemoryContent,
-      type: newMemoryType,
-      timestamp: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    
-    const newMemories = [newMemory, ...memories];
-    
-    try {
-      const userRef = doc(db, 'users', user.uid);
-      await setDoc(userRef, { memories: newMemories }, { merge: true });
-      setMemories(newMemories);
-      setNewMemoryContent('');
-      setNewMemoryType('Personal');
     } catch (e) {
       handleFirestoreError(e, OperationType.WRITE, `users/${user.uid}`);
     }
@@ -804,39 +772,10 @@ When using tools, think silently but speak naturally after receiving results.` }
               Stored Memories
               <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{memories.length} item(s)</span>
             </label>
-            
-            <div className="add-memory-form" style={{ marginTop: '12px', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
-              <textarea 
-                className="form-input" 
-                placeholder="Add a new memory manually..." 
-                value={newMemoryContent}
-                onChange={(e) => setNewMemoryContent(e.target.value)}
-                rows={2}
-                style={{ fontSize: '13px' }}
-              />
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
-                <select 
-                  className="form-input" 
-                  style={{ width: 'auto', fontSize: '12px', padding: '4px 8px', height: 'auto' }}
-                  value={newMemoryType}
-                  onChange={(e) => setNewMemoryType(e.target.value)}
-                >
-                  <option value="Personal">Personal</option>
-                  <option value="Work">Work</option>
-                  <option value="Project">Project</option>
-                </select>
-                <button 
-                  className="pill-btn" 
-                  style={{ fontSize: '11px', padding: '4px 12px', backgroundColor: 'var(--accent-active)', color: 'var(--bg-main)' }}
-                  onClick={handleAddMemory}
-                >Add Memory</button>
-              </div>
-            </div>
-
-            <div className="memory-list" style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div className="memory-list" style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {memories.length === 0 ? (
                 <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', fontSize: '13px', textAlign: 'center' }}>
-                  No memories stored yet. Talk to Beatrice or add one above!
+                  No memories stored yet. Talk to Beatrice to build context!
                 </div>
               ) : (
                 memories.map((m, i) => (
@@ -849,31 +788,18 @@ When using tools, think silently but speak naturally after receiving results.` }
                           onChange={(e) => setEditingMemoryValue(e.target.value)}
                           rows={2}
                           autoFocus
-                          style={{ fontSize: '13px' }}
                         />
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <select 
-                            className="form-input" 
-                            style={{ width: 'auto', fontSize: '12px', padding: '4px 8px', height: 'auto' }}
-                            value={editingMemoryType}
-                            onChange={(e) => setEditingMemoryType(e.target.value)}
-                          >
-                            <option value="Personal">Personal</option>
-                            <option value="Work">Work</option>
-                            <option value="Project">Project</option>
-                          </select>
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            <button 
-                              className="pill-btn" 
-                              style={{ fontSize: '11px', padding: '4px 8px' }}
-                              onClick={() => setEditingMemoryIndex(null)}
-                            >Cancel</button>
-                            <button 
-                              className="pill-btn" 
-                              style={{ fontSize: '11px', padding: '4px 8px', backgroundColor: 'var(--accent-active)', color: 'var(--bg-main)' }}
-                              onClick={() => handleUpdateMemory(i, editingMemoryValue, editingMemoryType)}
-                            >Save</button>
-                          </div>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                          <button 
+                            className="pill-btn" 
+                            style={{ fontSize: '11px', padding: '4px 8px' }}
+                            onClick={() => setEditingMemoryIndex(null)}
+                          >Cancel</button>
+                          <button 
+                            className="pill-btn" 
+                            style={{ fontSize: '11px', padding: '4px 8px', backgroundColor: 'var(--accent-active)', color: 'var(--bg-main)' }}
+                            onClick={() => handleUpdateMemory(i, editingMemoryValue)}
+                          >Save</button>
                         </div>
                       </div>
                     ) : (
@@ -887,7 +813,6 @@ When using tools, think silently but speak naturally after receiving results.` }
                               onClick={() => {
                                 setEditingMemoryIndex(i);
                                 setEditingMemoryValue(m.content);
-                                setEditingMemoryType(m.type || 'Personal');
                               }}
                             >
                               <Pencil size={12} />
@@ -902,16 +827,7 @@ When using tools, think silently but speak naturally after receiving results.` }
                           </div>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ 
-                            fontSize: '9px', 
-                            color: m.type === 'Work' ? '#60a5fa' : m.type === 'Project' ? '#cbfb45' : '#fb923c', 
-                            textTransform: 'uppercase', 
-                            letterSpacing: '0.5px',
-                            fontWeight: '600',
-                            backgroundColor: 'rgba(255,255,255,0.05)',
-                            padding: '2px 6px',
-                            borderRadius: '4px'
-                          }}>{m.type || 'Personal'}</span>
+                          <span style={{ fontSize: '10px', color: 'var(--accent-active)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{m.type}</span>
                           <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{new Date(m.timestamp || m.updatedAt).toLocaleDateString()}</span>
                         </div>
                       </>
