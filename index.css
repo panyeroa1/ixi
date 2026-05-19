@@ -224,6 +224,10 @@
       width: 100%; font-size: 16px; font-weight: 600; margin-top: 12px; cursor: pointer;
     }
     .save-now-btn.saved { background-color: var(--accent-active); color: #fff; }
+    .pill-btn {
+      background-color: var(--bg-chip); border: 1px solid var(--border-color); color: var(--text-main);
+      padding: 10px 20px; border-radius: 50px; font-size: 14px; font-weight: 600; cursor: pointer;
+    }
 
     /* Action List for Profile */
     .danger-action { color: var(--accent-danger); font-weight: 600; padding: 16px; background: #2a1111; border-radius: 16px; text-align: center; margin-top: 24px; border: 1px solid #4a1c1c; }

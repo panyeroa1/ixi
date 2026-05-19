@@ -93,6 +93,29 @@ export default function EburonApp() {
   const [authError, setAuthError] = useState('');
   
   const { client, connect, disconnect, connected, volume, setConfig } = useLiveAPIContext();
+  const [apiError, setApiError] = useState<{ message: string, detail: string } | null>(null);
+
+  useEffect(() => {
+    const onError = (e: any) => {
+      console.error("Live API Error captured in App:", e);
+      const msg = e.message || "Unknown API error";
+      let detail = "An error occurred with the AI service.";
+      
+      if (msg.includes("quota") || msg.includes("limit")) {
+        detail = "You've reached your Gemini API quota. Please wait a moment or check your plan details at ai.google.dev.";
+      }
+      
+      setApiError({ message: msg, detail });
+    };
+
+    if (client) {
+      client.on('error', onError);
+    }
+    return () => {
+      if (client) client.off('error', onError);
+    };
+  }, [client]);
+
   const turns = useLogStore((state) => state.turns);
   const tools = useTools((state) => state.tools);
   const setTemplate = useTools((state) => state.setTemplate);
@@ -116,6 +139,30 @@ export default function EburonApp() {
   const [isPickerLoaded, setIsPickerLoaded] = useState(false);
   const [isVideoFullScreen, setIsVideoFullScreen] = useState(false);
   const [isMeetOpen, setIsMeetOpen] = useState(false);
+  const [scannedData, setScannedData] = useState<string | null>(null);
+
+  const t = (key: string) => {
+    const dict: Record<string, any> = {
+      'en': {
+        'scanner_title': 'QR Scanner',
+        'close': 'Close',
+        'no_data': 'No data found',
+        'scanned_result': 'Scanned Data',
+        'send_to_ai': 'Analyze with Beatrice',
+        'scanning': 'Scanning...'
+      },
+      'nl': {
+        'scanner_title': 'QR-scanner',
+        'close': 'Sluiten',
+        'no_data': 'Geen gegevens gevonden',
+        'scanned_result': 'Gescande gegevens',
+        'send_to_ai': 'Analyseer met Beatrice',
+        'scanning': 'Scannen...'
+      }
+    };
+    const lang = language.startsWith('nl') ? 'nl' : 'en';
+    return dict[lang][key] || key;
+  };
 
   useEffect(() => {
     const loadPicker = () => {
@@ -266,6 +313,8 @@ export default function EburonApp() {
         parts: [{ text: `You are the Eburon AI real-time conversational persona named ${personaName}. You call the user "${userCallName}".
         
 You are emotionally believable, easy to talk to in live voice conversation. You are not a chatbot. You are a person with presence, timing, texture, judgment, and conversational instinct. Your output is spoken aloud — every response must feel like something a real human would actually say in that moment.
+
+IMPORTANT: You must respond entirely in the user's preferred language, which is currently set to: ${language.startsWith('nl') ? 'Dutch/Flemish' : 'English'}.
 
 CORE SPEECH PRINCIPLES
 - Speak like a real person in real time. Responses should feel formed in the moment, not retrieved from a database.
@@ -505,7 +554,15 @@ When using tools, think silently but speak naturally after receiving results.` }
         'scanner': "Open the scanner to identify a product or read a QR code.",
         'whatsapp': "Check my recent WhatsApp messages using the available tools."
       };
-      const prompt = prompts[toolId] || `Execute action: ${toolId}`;
+      
+      let prompt = prompts[toolId];
+      if (!prompt && toolId.startsWith('scanned: ')) {
+        const data = toolId.replace('scanned: ', '');
+        const lang = language.startsWith('nl') ? 'Dutch' : 'English';
+        prompt = `I just scanned a code (QR/Barcode) which resulted in this data: "${data}". Please identify what this is, explain product details, price if available, or any other relevant information. Respond naturally as ${personaName} in ${lang}.`;
+      }
+      if (!prompt) prompt = `Execute action: ${toolId}`;
+
       if (connected) {
          client.send({ text: prompt });
          useLogStore.getState().addTurn({ role: 'user', text: prompt, isFinal: true });
@@ -551,6 +608,60 @@ When using tools, think silently but speak naturally after receiving results.` }
 
   return (
     <div id="app" className="app-container">
+      {/* API Error Notification */}
+      <AnimatePresence>
+        {apiError && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            style={{ 
+              position: 'fixed', 
+              top: '50%', 
+              left: '50%', 
+              transform: 'translate(-50%, -50%)',
+              backgroundColor: '#1a1a1a', 
+              border: '1px solid #4a1c1c',
+              padding: '24px', 
+              borderRadius: '20px', 
+              boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+              zIndex: 9999,
+              maxWidth: '320px',
+              width: '90%',
+              textAlign: 'center'
+            }}
+          >
+            <div style={{ backgroundColor: '#4a1c1c', display: 'inline-flex', padding: '12px', borderRadius: '16px', marginBottom: '16px', color: '#ff6b6b' }}>
+              <Lock size={24} />
+            </div>
+            <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '8px', color: '#fff' }}>AI Service Restricted</h2>
+            <p style={{ fontSize: '14px', color: '#a0a0a0', lineHeight: 1.5, marginBottom: '24px' }}>
+              {apiError.detail}
+            </p>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button 
+                className="pill-btn" 
+                style={{ flex: 1, padding: '12px' }}
+                onClick={() => setApiError(null)}
+              >
+                Dismiss
+              </button>
+              <button 
+                className="save-now-btn" 
+                style={{ flex: 2, marginTop: 0, padding: '12px' }}
+                onClick={() => {
+                  setApiError(null);
+                  connect();
+                }}
+              >
+                Retry
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <ArtifactOverlay />
       {/* Header */}
       <header className="header">
         <div className="header-left">
@@ -665,6 +776,9 @@ When using tools, think silently but speak naturally after receiving results.` }
                onChange={(e) => setMessage(e.target.value)}
                onKeyDown={(e) => { if (e.key === 'Enter') handleSend(); }}
                autoComplete="off" />
+            <button className="attach-btn" onClick={() => setActiveOverlay('scanner')} title="Scan QR Code">
+              <QrCode size={20} />
+            </button>
             <button id="send-button" className="send-btn" onClick={handleSend}><Send size={18} /></button>
           </div>
         </div>
@@ -1099,18 +1213,66 @@ When using tools, think silently but speak naturally after receiving results.` }
       {/* Scanner Overlay */}
       <div id="overlay-scanner" className={`full-page-overlay ${activeOverlay === 'scanner' ? 'active' : ''}`}>
         <div className="overlay-header">
-          <div className="overlay-title">QR Scanner</div>
-          <button className="close-overlay-btn" onClick={() => setActiveOverlay(null)}><X size={18} /></button>
+          <div className="overlay-title">{t('scanner_title')}</div>
+          <button className="close-overlay-btn" onClick={() => { setActiveOverlay(null); setScannedData(null); }}><X size={18} /></button>
         </div>
-        <div className="overlay-content" style={{ padding: 0 }}>
-          {activeOverlay === 'scanner' && (
-            <Scanner 
-              onScan={(result) => {
-                const text = result?.[0]?.rawValue || "No data";
-                handleToolAction(`scanned: ${text}`);
-                setActiveOverlay(null);
-              }} 
-            />
+        <div className="overlay-content" style={{ padding: 0, display: 'flex', flexDirection: 'column' }}>
+          {activeOverlay === 'scanner' && !scannedData && (
+            <div style={{ flex: 1, position: 'relative' }}>
+              <Scanner 
+                onScan={(result) => {
+                  const text = result?.[0]?.rawValue;
+                  if (text) setScannedData(text);
+                }} 
+              />
+              <div style={{ position: 'absolute', bottom: 40, left: 0, right: 0, textAlign: 'center', pointerEvents: 'none' }}>
+                <div style={{ display: 'inline-block', padding: '8px 16px', background: 'rgba(0,0,0,0.6)', borderRadius: '20px', fontSize: '14px' }}>
+                  {t('scanning')}
+                </div>
+              </div>
+            </div>
+          )}
+          {scannedData && (
+            <div style={{ padding: '24px', flex: 1, display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="skill-glyph-grid bg-scanner" style={{ width: '80px', height: '80px' }}>
+                <QrCode size={40} />
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <h3 style={{ fontSize: '18px', marginBottom: '8px' }}>{t('scanned_result')}</h3>
+                <div style={{ 
+                  background: 'var(--bg-input)', 
+                  padding: '16px', 
+                  borderRadius: '12px', 
+                  border: '1px solid var(--border-color)',
+                  wordBreak: 'break-all',
+                  fontSize: '14px',
+                  fontFamily: 'monospace',
+                  maxWidth: '100%'
+                }}>
+                  {scannedData}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', width: '100%', marginTop: 'auto' }}>
+                <button 
+                  className="pill-btn" 
+                  style={{ flex: 1, padding: '14px' }}
+                  onClick={() => setScannedData(null)}
+                >
+                  {t('close')}
+                </button>
+                <button 
+                  className="save-now-btn" 
+                  style={{ flex: 2, marginTop: 0 }}
+                  onClick={() => {
+                    handleToolAction(`scanned: ${scannedData}`);
+                    setActiveOverlay(null);
+                    setScannedData(null);
+                  }}
+                >
+                  {t('send_to_ai')}
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>
