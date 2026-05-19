@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { ArtifactOverlay } from './components/ArtifactOverlay';
+import { AgentTaskPanel } from './components/AgentTaskPanel';
 
 function StreamingText({ text, isFinal }: { text: string; isFinal: boolean }) {
   const [displayedText, setDisplayedText] = useState(isFinal ? text : "");
@@ -560,6 +561,8 @@ Output only natural spoken text. No stage directions, no brackets, no role label
         </div>
       </header>
 
+      <AgentTaskPanel />
+
       {/* Skills Rail */}
       <div id="skills-rail">
         <div className="skills-row" data-row="1">
@@ -703,9 +706,6 @@ Output only natural spoken text. No stage directions, no brackets, no role label
         </motion.div>
       )}
       </AnimatePresence>
-
-      {/* Workspace & Artifact Overlay */}
-      <ArtifactOverlay />
 
       {/* Profile Overlay */}
       <div id="overlay-profile" className={`full-page-overlay ${activeOverlay === 'profile' ? 'active' : ''}`}>
