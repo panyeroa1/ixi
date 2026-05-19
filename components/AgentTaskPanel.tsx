@@ -50,14 +50,12 @@ export function AgentTaskPanel() {
 
   }, [isGenerating, activeWorkspaceResult]);
 
-  if (!isGenerating && !activeWorkspaceResult) return null;
-
   return (
     <AnimatePresence>
       <motion.div 
-        initial={{ opacity: 0, height: 0 }}
-        animate={{ opacity: 1, height: 'auto' }}
-        exit={{ opacity: 0, height: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
         className="agent-task-panel"
         style={{
           display: 'flex',
@@ -66,12 +64,12 @@ export function AgentTaskPanel() {
           borderBottom: '1px solid var(--border-color)',
           overflow: 'hidden',
           zIndex: 4,
-          width: '100%'
+          width: '100%',
+          height: '100%'
         }}
       >
         {/* Sandbox Preview - Persistent Landscape Desktop View */}
         <div 
-          className="sandbox-preview" 
           style={{ 
             width: '100%',
             height: '240px', // Fixed height for the landscape "window" on mobile

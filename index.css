@@ -308,9 +308,11 @@
     .app-header {
       flex-shrink: 0;
       z-index: 50;
-      position: sticky;
-      top: 0;
       background: var(--bg-main);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: max(12px, env(safe-area-inset-top)) 16px 12px;
     }
 
     .main-content {
@@ -322,14 +324,14 @@
       position: relative;
     }
 
-    .sandbox-preview {
+    .sandbox-preview-shell {
       flex-shrink: 0;
+      width: 100%;
       height: 210px;
       max-height: 28dvh;
       overflow: hidden;
       border-bottom: 1px solid var(--border-color);
       background: var(--bg-panel);
-      /* Subtle recessed effect + lighting */
       box-shadow: inset 0 2px 15px rgba(0,0,0,0.6);
     }
 
@@ -353,7 +355,5 @@
       background: var(--bg-main);
     }
 
-    /* Keep existing styles, but map to new classes */
-    .header { @extend .app-header; }
-    .bottom-dock { @extend .bottom-navbar; }
-    #text-streaming-area { @extend .chat-area; }
+
+    /* Map IDs/Classes to layout classes if needed, or update HTML */

@@ -226,7 +226,13 @@ async function startServer() {
       const text = await response.text();
       try {
         const json = JSON.parse(text);
-        res.json(json);
+        // Normalize response to { status, qr?, message? }
+        let status = 'connected';
+        if (json.status === 'qr' || json.qr) status = 'qr';
+        else if (json.status === 'loading') status = 'loading';
+        else if (json.status === 'error') status = 'error';
+
+        res.json({ status, qr: json.qr || json.qr_code, message: json.message || json.status });
       } catch (e) {
         console.error('WhatsApp Bridge response is not valid JSON:', text);
         res.status(502).json({ error: 'WhatsApp Bridge returned an invalid response (expected JSON)', details: text.substring(0, 50) });

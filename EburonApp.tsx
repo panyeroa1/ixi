@@ -580,7 +580,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
   return (
     <div id="app" className="app-shell">
       {/* Header */}
-      <header className="header">
+      <header className="app-header">
         <div className="header-left">
           <img src="https://eburon.ai/icon-eburon.svg" alt="Eburon Logo" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
           <span className="ai-name">Eburon AI</span>
@@ -656,9 +656,9 @@ Output only natural spoken text. No stage directions, no brackets, no role label
 
       <div className="main-content">
         {(isGenerating || activeWorkspaceResult) && (
-           <div className="sandbox-preview">
-              <AgentTaskPanel />
-           </div>
+          <div className="sandbox-preview-shell">
+            <AgentTaskPanel />
+          </div>
         )}
 
         {/* Chat Stream */}
@@ -679,7 +679,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
       </div>
 
       {/* Bottom Dock */}
-      <div className="bottom-dock">
+      <div className="bottom-navbar">
         <div className="input-wrapper">
           <div className="input-bar">
             <button className="attach-btn" onClick={() => fileInputRef.current?.click()}><Paperclip size={20} /></button>
