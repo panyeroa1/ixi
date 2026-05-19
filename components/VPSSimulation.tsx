@@ -89,21 +89,23 @@ export function VPSSimulation() {
           // Address bar animation
           await moveCursorToElement('vps-address-bar', 100, 15);
           await clickAction();
+          
           const targetUrl = cmd.url.toLowerCase();
           
-          if (targetUrl.includes('google.com')) {
-            setActiveScreen('google');
+          // Atomic Screen Determination
+          let nextScreen = 'iframe';
+          if (targetUrl.includes('google.com')) nextScreen = 'google';
+          else if (targetUrl.includes('youtube.com')) nextScreen = 'youtube';
+          else if (targetUrl.includes('agent') || targetUrl.includes('eburon')) nextScreen = 'ide';
+          
+          setActiveScreen(nextScreen);
+          setCurrentUrl(cmd.url);
+          
+          // Reset internal states based on new screen
+          if (nextScreen === 'google') {
             setShowGHome(true);
             setShowGResults(false);
-          } else if (targetUrl.includes('youtube.com')) {
-            setActiveScreen('youtube');
-          } else if (targetUrl.includes('agent') || targetUrl.includes('eburon')) {
-            setActiveScreen('ide');
-          } else {
-            setActiveScreen('iframe');
-            setCurrentUrl(cmd.url);
           }
-          setCurrentUrl(cmd.url);
           break;
 
         case 'CLICK':
@@ -224,7 +226,7 @@ export function VPSSimulation() {
           
           {/* Iframe View */}
           <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: activeScreen === 'iframe' ? 1 : 0, pointerEvents: activeScreen === 'iframe' ? 'auto' : 'none', transition: 'opacity 0.4s ease', zIndex: activeScreen === 'iframe' ? 5 : 0 }}>
-             <iframe src={`https://${currentUrl.includes('://') ? currentUrl.split('://')[1] : currentUrl}`} style={{ width: '100%', height: '100%', border: 'none', background: '#fff' }} />
+             <iframe src={`https://${currentUrl.includes('://') ? currentUrl.split('://')[1] : currentUrl}`} style={{ width: '100%', height: '100%', border: 'none', background: '#0f172a' }} />
           </div>
           
           {/* Youtube View */}

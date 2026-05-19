@@ -331,7 +331,6 @@
       background: var(--bg-panel);
       /* Subtle recessed effect + lighting */
       box-shadow: inset 0 2px 15px rgba(0,0,0,0.6);
-      background-image: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.02), transparent 60%);
     }
 
     .chat-area {

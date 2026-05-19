@@ -133,7 +133,7 @@ export function AgentTaskPanel() {
                   activeWorkspaceResult.artifact.type === 'html' ? (
                   <iframe 
                       srcDoc={activeWorkspaceResult.artifact.content}
-                      style={{ width: '100%', height: '100%', border: 'none', backgroundColor: '#fff' }}
+                      style={{ width: '100%', height: '100%', border: 'none', backgroundColor: '#0f172a', color: '#fff' }}
                       title="Beatrice Document Preview"
                   />
                   ) : activeWorkspaceResult.artifact.type === 'pdf' ? (
@@ -143,11 +143,11 @@ export function AgentTaskPanel() {
                       title="PDF Preview"
                   />
                   ) : activeWorkspaceResult.artifact.type === 'markdown' ? (
-                    <div className="markdown-body" style={{ width: '100%', height: '100%', overflowY: 'auto', padding: '32px', backgroundColor: '#fff', color: '#000', fontSize: '16px', boxSizing: 'border-box' }}>
+                    <div className="markdown-body" style={{ width: '100%', height: '100%', overflowY: 'auto', padding: '32px', backgroundColor: '#0f172a', color: '#fff', fontSize: '16px', boxSizing: 'border-box' }}>
                       <ReactMarkdown>{activeWorkspaceResult.artifact.content}</ReactMarkdown>
                     </div>
                   ) : (
-                    <div style={{ width: '100%', height: '100%', overflowY: 'auto', padding: '32px', backgroundColor: '#000', color: '#fff', fontSize: '16px', boxSizing: 'border-box' }}>
+                    <div style={{ width: '100%', height: '100%', overflowY: 'auto', padding: '32px', backgroundColor: '#0f172a', color: '#fff', fontSize: '16px', boxSizing: 'border-box' }}>
                       <div style={{ fontWeight: 600, fontSize: '20px', marginBottom: '16px' }}>{activeWorkspaceResult.artifact.title || 'Document'}</div>
                       <div style={{ whiteSpace: 'pre-wrap' }}>{activeWorkspaceResult.artifact.content}</div>
                     </div>
