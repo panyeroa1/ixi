@@ -561,8 +561,6 @@ Output only natural spoken text. No stage directions, no brackets, no role label
         </div>
       </header>
 
-      <AgentTaskPanel />
-
       {/* Skills Rail */}
       <div id="skills-rail">
         <div className="skills-row" data-row="1">
@@ -603,21 +601,27 @@ Output only natural spoken text. No stage directions, no brackets, no role label
         </div>
       </div>
 
-      {/* Chat Stream */}
-      <main id="text-streaming-area" ref={chatAreaRef}>
-        <div id="conversation-container">
-          <div className="conversation-message ai">Hey Boss! I'm Beatrice. Connect your session!</div>
-          {filteredTurns.map((turn, i) => (
-             <div key={i} className={`conversation-message ${turn.role === 'user' ? 'user' : 'ai'}`}>
-                {turn.role === 'agent' ? (
-                  <StreamingText text={turn.text} isFinal={turn.isFinal} />
-                ) : (
-                  turn.text
-                )}
-             </div>
-          ))}
-        </div>
-      </main>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <AgentTaskPanel />
+
+        {/* Chat Stream */}
+        {useUI((state) => !state.activeWorkspaceResult) && (
+          <main id="text-streaming-area" ref={chatAreaRef}>
+            <div id="conversation-container">
+              <div className="conversation-message ai">Hey Boss! I'm Beatrice. Connect your session!</div>
+              {filteredTurns.map((turn, i) => (
+                 <div key={i} className={`conversation-message ${turn.role === 'user' ? 'user' : 'ai'}`}>
+                    {turn.role === 'agent' ? (
+                      <StreamingText text={turn.text} isFinal={turn.isFinal} />
+                    ) : (
+                      turn.text
+                    )}
+                 </div>
+              ))}
+            </div>
+          </main>
+        )}
+      </div>
 
       {/* Bottom Dock */}
       <div className="bottom-dock">

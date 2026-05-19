@@ -55,11 +55,12 @@ export function AgentTaskPanel() {
     <AnimatePresence>
       <motion.div 
         initial={{ opacity: 0, height: 0 }}
-        animate={{ opacity: 1, height: 'auto' }}
+        animate={{ opacity: 1, height: activeWorkspaceResult ? '100%' : 'auto' }}
         exit={{ opacity: 0, height: 0 }}
         className="agent-task-panel"
         style={{
           width: '100%',
+          flex: activeWorkspaceResult ? 1 : 'none',
           display: 'flex',
           flexDirection: 'column',
           backgroundColor: '#0a0a0a',
@@ -74,7 +75,8 @@ export function AgentTaskPanel() {
           className="sandbox-preview" 
           style={{ 
             width: '100%',
-            height: '200px', // compact landscape
+            flex: activeWorkspaceResult ? 1 : 'none',
+            height: activeWorkspaceResult ? 'auto' : '200px', // compact landscape originally
             backgroundColor: '#111111',
             borderBottom: '1px solid var(--border-color)',
             position: 'relative',
@@ -134,30 +136,32 @@ export function AgentTaskPanel() {
         </div>
 
         {/* Logs / Activity Panel */}
-        <div 
-          className="activity-logs"
-          style={{
-            padding: '12px 16px',
-            backgroundColor: '#0a0a0a',
-            height: '100px',
-            overflowY: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '6px'
-          }}
-        >
-          <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-label)', letterSpacing: '0.05em', marginBottom: '4px' }}>
-            Recent Steps
+        {!activeWorkspaceResult && (
+          <div 
+            className="activity-logs"
+            style={{
+              padding: '12px 16px',
+              backgroundColor: '#0a0a0a',
+              height: '100px',
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px'
+            }}
+          >
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-label)', letterSpacing: '0.05em', marginBottom: '4px' }}>
+              Recent Steps
+            </div>
+            {logs.map((log) => (
+               <div key={log.id} style={{ fontSize: '13px', color: 'var(--text-muted)', display: 'flex', gap: '8px' }}>
+                  <span style={{ color: 'var(--text-label)', opacity: 0.5 }}>{log.time}</span>
+                  <span>{log.message}</span>
+               </div>
+            ))}
+            {/* Scroll anchor */}
+            {logs.length > 0 && <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth' })} />}
           </div>
-          {logs.map((log) => (
-             <div key={log.id} style={{ fontSize: '13px', color: 'var(--text-muted)', display: 'flex', gap: '8px' }}>
-                <span style={{ color: 'var(--text-label)', opacity: 0.5 }}>{log.time}</span>
-                <span>{log.message}</span>
-             </div>
-          ))}
-          {/* Scroll anchor */}
-          {logs.length > 0 && <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth' })} />}
-        </div>
+        )}
       </motion.div>
     </AnimatePresence>
   );
