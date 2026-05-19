@@ -15,9 +15,20 @@ const DIST_PATH = path.join(process.cwd(), 'dist');
 let adminInitialized = false;
 function getFirebaseAdmin() {
   if (!adminInitialized) {
-    const projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID;
+    let projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID;
     
-    // Always call initializeApp, even if projectId is undefined (it might work with local credentials or environment settings)
+    // Try to load from firebase-applet-config.json if not in env
+    if (!projectId) {
+      try {
+        const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
+        const config = require(configPath);
+        projectId = config.projectId;
+        console.log('Loaded project ID from firebase-applet-config.json:', projectId);
+      } catch (e) {
+        // Ignore
+      }
+    }
+
     try {
       admin.initializeApp(projectId ? { projectId } : {});
       adminInitialized = true;
@@ -182,35 +193,76 @@ async function startServer() {
   });
 
   // WhatsApp Proxy
-  app.get('/api/whatsapp/connect', async (req, res) => {
-    const gowaUrl = process.env.GOWA_API_URL;
+  app.get('/api/whatsapp/connect', authenticateToken, async (req: any, res) => {
+    let gowaUrl = process.env.GOWA_API_URL;
     if (!gowaUrl) return res.status(503).json({ error: 'GoWA API not configured' });
+    if (gowaUrl.endsWith('/')) gowaUrl = gowaUrl.slice(0, -1);
     
     try {
       const headers: any = {
         'Authorization': `Basic ${Buffer.from(`${process.env.GOWA_USERNAME}:${process.env.GOWA_PASSWORD}`).toString('base64')}`,
-        'X-Device-Id': '92d5d59e-de02-4375-89ee-89bf58299b96'
+        'X-Device-Id': req.user.uid || 'default-session'
       };
       if (process.env.GOWA_TRAEFIK_HOST) {
         headers['Host'] = process.env.GOWA_TRAEFIK_HOST;
       }
 
+      console.log(`Connecting to GoWA: ${gowaUrl}/instance/connect`);
       const response = await fetch(`${gowaUrl}/instance/connect`, { headers });
-      res.json(await response.json());
+      
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const result = await response.json();
+        res.json(result);
+      } else {
+        const text = await response.text();
+        console.error('WhatsApp non-JSON response:', text.slice(0, 500));
+        res.status(response.status).json({ error: 'Upstream returned non-JSON response', status: response.status });
+      }
+    } catch (e: any) {
+      console.error('WhatsApp Proxy Error:', e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get('/api/whatsapp/status', authenticateToken, async (req: any, res) => {
+    let gowaUrl = process.env.GOWA_API_URL;
+    if (!gowaUrl) return res.status(503).json({ error: 'GoWA API not configured' });
+    if (gowaUrl.endsWith('/')) gowaUrl = gowaUrl.slice(0, -1);
+    
+    try {
+      const headers: any = {
+        'Authorization': `Basic ${Buffer.from(`${process.env.GOWA_USERNAME}:${process.env.GOWA_PASSWORD}`).toString('base64')}`,
+        'X-Device-Id': req.user.uid || 'default-session'
+      };
+      if (process.env.GOWA_TRAEFIK_HOST) {
+        headers['Host'] = process.env.GOWA_TRAEFIK_HOST;
+      }
+
+      const response = await fetch(`${gowaUrl}/instance/info`, { headers });
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const result = await response.json();
+        res.json(result);
+      } else {
+        const text = await response.text();
+        res.status(response.status).json({ error: 'Upstream returned non-JSON response', status: response.status });
+      }
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
   });
 
   app.post('/api/whatsapp/send', authenticateToken, async (req: any, res) => {
-    const gowaUrl = process.env.GOWA_API_URL;
+    let gowaUrl = process.env.GOWA_API_URL;
     if (!gowaUrl) return res.status(503).json({ error: 'GoWA API not configured' });
+    if (gowaUrl.endsWith('/')) gowaUrl = gowaUrl.slice(0, -1);
     
     try {
       const headers: any = {
         'Content-Type': 'application/json',
         'Authorization': `Basic ${Buffer.from(`${process.env.GOWA_USERNAME}:${process.env.GOWA_PASSWORD}`).toString('base64')}`,
-        'X-Device-Id': '92d5d59e-de02-4375-89ee-89bf58299b96'
+        'X-Device-Id': req.user.uid || 'default-session'
       };
       if (process.env.GOWA_TRAEFIK_HOST) {
         headers['Host'] = process.env.GOWA_TRAEFIK_HOST;
@@ -224,7 +276,15 @@ async function startServer() {
           text: req.body.text
         })
       });
-      const result = await response.json();
+
+      const contentType = response.headers.get('content-type');
+      let result;
+      if (contentType && contentType.includes('application/json')) {
+        result = await response.json();
+      } else {
+        const text = await response.text();
+        return res.status(response.status).json({ error: 'Upstream returned non-JSON response', status: response.status });
+      }
 
       // Log to Firestore
       try {

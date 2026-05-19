@@ -140,6 +140,55 @@ export default function EburonApp() {
   const [isVideoFullScreen, setIsVideoFullScreen] = useState(false);
   const [isMeetOpen, setIsMeetOpen] = useState(false);
   const [scannedData, setScannedData] = useState<string | null>(null);
+  const [whatsappQR, setWhatsappQR] = useState<string | null>(null);
+  const [whatsappStatus, setWhatsappStatus] = useState<string>('disconnected');
+  const [isWhatsappLoading, setIsWhatsappLoading] = useState(false);
+
+  const fetchWhatsAppStatus = async () => {
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) return;
+      const res = await fetch('/api/whatsapp/connect', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await res.text();
+        console.warn("WhatsApp API returned non-JSON:", text.slice(0, 100));
+        setWhatsappStatus('disconnected');
+        return;
+      }
+
+      const data = await res.json();
+      if (data.qr) {
+        setWhatsappQR(data.qr);
+        setWhatsappStatus('qr');
+      } else if (data.status === 'CONNECTED' || data.code === 200 || data.message?.includes('Connected')) {
+        setWhatsappStatus('connected');
+        setWhatsappQR(null);
+      } else {
+        setWhatsappStatus('disconnected');
+      }
+    } catch (err) {
+      console.error("WhatsApp Error:", err);
+      setWhatsappStatus('error');
+    } finally {
+      setIsWhatsappLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let interval: any;
+    if (activeOverlay === 'whatsapp') {
+      setIsWhatsappLoading(true);
+      fetchWhatsAppStatus();
+      interval = setInterval(fetchWhatsAppStatus, 5000);
+    } else {
+      setWhatsappQR(null);
+    }
+    return () => clearInterval(interval);
+  }, [activeOverlay]);
 
   const t = (key: string) => {
     const dict: Record<string, any> = {
@@ -1283,11 +1332,48 @@ When using tools, think silently but speak naturally after receiving results.` }
            <div className="overlay-title">WhatsApp Business</div>
            <button className="close-overlay-btn" onClick={() => setActiveOverlay(null)}><X size={18} /></button>
         </div>
-        <div className="overlay-content">
-           <div style={{ textAlign: 'center', marginTop: '100px', color: 'var(--text-muted)' }}>
-              <MessageSquare size={48} style={{ marginBottom: '16px', opacity: 0.5 }} />
-              <p>Connecting to WhatsApp Business API...</p>
-           </div>
+        <div className="overlay-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '40px' }}>
+           {isWhatsappLoading && !whatsappQR && (
+             <div style={{ color: 'var(--text-muted)' }}>
+               <RotateCcw className="animate-spin" size={48} style={{ marginBottom: '16px', opacity: 0.5 }} />
+               <p>Connecting to WhatsApp Business API...</p>
+             </div>
+           )}
+
+           {!isWhatsappLoading && whatsappStatus === 'qr' && whatsappQR && (
+             <div style={{ maxWidth: '300px', width: '100%' }}>
+               <div style={{ background: '#fff', padding: '20px', borderRadius: '16px', marginBottom: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
+                 <img src={whatsappQR} alt="WhatsApp QR Code" style={{ width: '100%', height: 'auto', display: 'block' }} />
+               </div>
+               <h3 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '8px' }}>Pair Account</h3>
+               <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.5 }}>
+                 Open WhatsApp on your phone, go to Linked Devices, and scan this QR code to join Eburon Business.
+               </p>
+             </div>
+           )}
+
+           {whatsappStatus === 'connected' && (
+             <div>
+               <div style={{ backgroundColor: 'rgba(0, 172, 71, 0.1)', color: '#00ac47', padding: '24px', borderRadius: '50%', display: 'inline-flex', marginBottom: '24px' }}>
+                 <Check size={48} />
+               </div>
+               <h3 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '8px' }}>WhatsApp Connected</h3>
+               <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '32px' }}>
+                 Your business account is active and ready for multi-user collaboration.
+               </p>
+               <button className="save-now-btn" style={{ width: 'auto', padding: '12px 32px' }} onClick={() => setActiveOverlay(null)}>
+                 Continue to Beatrice
+               </button>
+             </div>
+           )}
+
+           {!isWhatsappLoading && whatsappStatus === 'disconnected' && !whatsappQR && (
+             <div>
+               <MessageSquare size={48} style={{ marginBottom: '16px', opacity: 0.5 }} />
+               <p>Unable to retrieve QR code. Please try again.</p>
+               <button className="pill-btn" style={{ marginTop: '20px' }} onClick={fetchWhatsAppStatus}>Retry Connection</button>
+             </div>
+           )}
         </div>
       </div>
 
