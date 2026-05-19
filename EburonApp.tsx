@@ -654,8 +654,12 @@ Output only natural spoken text. No stage directions, no brackets, no role label
       </div>
       )}
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <AgentTaskPanel />
+      <div className="main-content-layout">
+        {(isGenerating || activeWorkspaceResult) && (
+           <div className="desktop-task-panel-wrapper">
+              <AgentTaskPanel />
+           </div>
+        )}
 
         {/* Chat Stream */}
         <main id="text-streaming-area" ref={chatAreaRef}>

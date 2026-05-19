@@ -4,6 +4,7 @@ import { createServer as createViteServer } from 'vite';
 import admin from 'firebase-admin';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
+import fs from 'fs';
 
 dotenv.config();
 
@@ -11,23 +12,37 @@ dotenv.config();
 const IS_PROD = process.env.NODE_ENV === 'production';
 const DIST_PATH = path.join(process.cwd(), 'dist');
 
-// Initialize Firebase Admin lazily
-let adminInitialized = false;
+// Initialize Firebase Admin with fallbacks
 function getFirebaseAdmin() {
-  if (!adminInitialized) {
-    const projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID;
-    if (projectId) {
+  if (admin.apps.length === 0) {
+    let projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID;
+    
+    if (!projectId) {
       try {
-        admin.initializeApp({
-          projectId: projectId,
-        });
-        adminInitialized = true;
-        console.log('Firebase Admin initialized');
+        const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
+        if (fs.existsSync(configPath)) {
+          const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+          projectId = config.projectId;
+        }
       } catch (e) {
-        console.warn('Firebase Admin initialization failed:', e);
+        console.warn('Failed to read firebase-applet-config.json:', e);
       }
-    } else {
-      console.warn('FIREBASE_PROJECT_ID not set, Firebase Admin not initialized');
+    }
+
+    try {
+      if (projectId) {
+        admin.initializeApp({ projectId });
+        console.log('Firebase Admin initialized with Project ID:', projectId);
+      } else {
+        // Try default initialization (works on GCP)
+        admin.initializeApp();
+        console.log('Firebase Admin initialized with default credentials');
+      }
+    } catch (e: any) {
+      if (e.code === 'app/duplicate-app') {
+        return admin;
+      }
+      console.error('Firebase Admin initialization failed:', e.message);
     }
   }
   return admin;
@@ -42,6 +57,9 @@ async function startServer() {
   const app = express();
   const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
+  // Initialize early
+  getFirebaseAdmin();
+
   app.use(express.json());
 
   // Auth Middleware
@@ -52,7 +70,13 @@ async function startServer() {
     if (!token) return res.sendStatus(401);
 
     try {
-      const decodedToken = await getFirebaseAdmin().auth().verifyIdToken(token);
+      const fbAdmin = getFirebaseAdmin();
+      if (fbAdmin.apps.length === 0) {
+        console.warn('Auth skipped: Firebase Admin not initialized');
+        // Handle mock case or error
+        return res.status(503).send('Authentication service unavailable');
+      }
+      const decodedToken = await fbAdmin.auth().verifyIdToken(token);
       req.user = decodedToken;
       next();
     } catch (error) {
