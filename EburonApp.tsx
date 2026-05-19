@@ -652,11 +652,11 @@ Output only natural spoken text. No stage directions, no brackets, no role label
         </div>
       </div>
 
-      <div className="main-content">
-        <div className="sandbox-preview-shell" style={{ display: (isGenerating || activeWorkspaceResult) ? 'block' : 'none' }}>
-           <AgentTaskPanel />
-        </div>
+      <div className="sandbox-preview-shell" style={{ display: (isGenerating || activeWorkspaceResult) ? 'block' : 'none' }}>
+         <AgentTaskPanel />
+      </div>
 
+      <main className="main-content">
         {/* Chat Stream */}
         <main className="chat-area" id="text-streaming-area" ref={chatAreaRef}>
           <div id="conversation-container">
@@ -672,7 +672,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
             ))}
           </div>
         </main>
-      </div>
+      </main>
 
       {/* Bottom Dock */}
       <div className="bottom-navbar">
