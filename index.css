@@ -295,31 +295,66 @@
     @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
     /* ---------------------------------------------------
-       Layout fixes for Desktop side-by-side AgentTaskPanel
+       1. App Shell Layout (Strict)
     --------------------------------------------------- */
-    .main-content-layout {
-      flex: 1;
+    .app-shell {
+      height: 100dvh;
       display: flex;
       flex-direction: column;
-      overflow: hidden; /* Important for scrolling internals */
+      overflow: hidden;
+      background: var(--bg-main);
+    }
+
+    .app-header {
+      flex-shrink: 0;
+      z-index: 50;
+      position: sticky;
+      top: 0;
+      background: var(--bg-main);
+    }
+
+    .main-content {
+      flex: 1;
       min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
       position: relative;
     }
 
-    .desktop-task-panel-wrapper {
-      display: flex;
-      flex-direction: column;
-      flex: none;
+    .sandbox-preview {
+      flex-shrink: 0;
+      height: 210px;
+      max-height: 28dvh;
+      overflow: hidden;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--bg-panel);
+      /* Subtle recessed effect + lighting */
+      box-shadow: inset 0 2px 15px rgba(0,0,0,0.6);
+      background-image: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.02), transparent 60%);
     }
 
-    @media (min-width: 1024px) {
-      .main-content-layout {
-        flex-direction: row;
-      }
-      .desktop-task-panel-wrapper {
-        flex: 1;
-        max-width: 50%;
-        border-right: 1px solid var(--border-color);
-        display: flex;
-      }
+    .chat-area {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
+
+    .input-bar {
+      flex-shrink: 0;
+      z-index: 50;
+    }
+
+    .bottom-navbar {
+      flex-shrink: 0;
+      z-index: 60;
+      position: sticky;
+      bottom: 0;
+      background: var(--bg-main);
+    }
+
+    /* Keep existing styles, but map to new classes */
+    .header { @extend .app-header; }
+    .bottom-dock { @extend .bottom-navbar; }
+    #text-streaming-area { @extend .chat-area; }

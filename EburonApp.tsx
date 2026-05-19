@@ -578,7 +578,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
   const filteredTurns = turns.filter(turn => turn.role !== 'system');
 
   return (
-    <div id="app" className="app-container">
+    <div id="app" className="app-shell">
       {/* Header */}
       <header className="header">
         <div className="header-left">
@@ -654,15 +654,15 @@ Output only natural spoken text. No stage directions, no brackets, no role label
       </div>
       )}
 
-      <div className="main-content-layout">
+      <div className="main-content">
         {(isGenerating || activeWorkspaceResult) && (
-           <div className="desktop-task-panel-wrapper">
+           <div className="sandbox-preview">
               <AgentTaskPanel />
            </div>
         )}
 
         {/* Chat Stream */}
-        <main id="text-streaming-area" ref={chatAreaRef}>
+        <main className="chat-area" id="text-streaming-area" ref={chatAreaRef}>
           <div id="conversation-container">
             <div className="conversation-message ai">Hey Boss! I'm Beatrice. Connect your session!</div>
             {filteredTurns.map((turn, i) => (
@@ -1062,6 +1062,7 @@ Output only natural spoken text. No stage directions, no brackets, no role label
                     useLogStore.getState().addTurn({ role: 'user', text: scanMsg, isFinal: true });
                   }
                 }}
+                formats={['qr_code', 'ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf']}
                 components={{
                   tracker: true,
                   audio: false,

@@ -223,7 +223,14 @@ async function startServer() {
       }
 
       const response = await fetch(`${gowaUrl}/instance/connect`, { headers });
-      res.json(await response.json());
+      const text = await response.text();
+      try {
+        const json = JSON.parse(text);
+        res.json(json);
+      } catch (e) {
+        console.error('WhatsApp Bridge response is not valid JSON:', text);
+        res.status(502).json({ error: 'WhatsApp Bridge returned an invalid response (expected JSON)', details: text.substring(0, 50) });
+      }
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
