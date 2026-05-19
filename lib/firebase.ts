@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, User } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { getFirestore, doc, getDocFromServer, disableNetwork } from 'firebase/firestore';
 import firebaseConfigFromFile from '../firebase-applet-config.json';
 
 const firebaseConfig = {
@@ -17,6 +17,11 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 const firestoreId = (firebaseConfig as any).firestoreDatabaseId || '';
 export const db = getFirestore(app, firestoreId === '' ? undefined : firestoreId); /* CRITICAL: The app will break without this line */
+
+// Prevent offline connection errors if using the default dummy config
+if (firebaseConfig.projectId === 'sample-firebase-ai-app-6c760') {
+  disableNetwork(db).catch(console.error);
+}
 
 const provider = new GoogleAuthProvider();
 // Required Scopes for Google Workspace APIs
